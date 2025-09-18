@@ -22,6 +22,7 @@ export async function initI18n(): Promise<void> {
       addPath: path.join(dirLocales, "{{lng}}.missing.json"),
     },
     interpolation: { escapeValue: false },
+    keySeparator: false,
   });
 }
 
@@ -35,10 +36,11 @@ export function t<K extends TranslationKeys>(
 }
 export function getAllLocalizedTranslations(
   key: TranslationKeys,
+  params?: TranslationParams[typeof key] & TOptions,
 ): Partial<Record<Locale, string | null>> | null {
   const result: Partial<Record<Locale, string | null>> = {};
   for (const lang of preloadedLangs) {
-    result[lang as Locale] = i18next.t(key, { lng: lang }) || null;
+    result[lang as Locale] = i18next.t(key, { lng: lang, ...params }) || null;
   }
   return result;
 }

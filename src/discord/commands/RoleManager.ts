@@ -1,6 +1,7 @@
 import { setConfig } from "@/discord/ConfigManager.js";
 import { getAllLocalizedTranslations, t } from "@/lib/locales/i18n.js";
 import type { TranslationKeys } from "@/lib/types/i18n.js";
+import { getUserLang } from "@/lib/utils.js";
 import type {
   ChatInputCommandInteraction,
   SlashCommandRoleOption,
@@ -61,9 +62,10 @@ export const data = new SlashCommandBuilder()
 export async function execute(
   interaction: ChatInputCommandInteraction,
 ): Promise<void> {
+  const userLang = getUserLang(interaction.locale);
   if (!interaction.guild) {
     await interaction.reply({
-      content: t("commandOnlyInGuild"),
+      content: t("commandOnlyInGuild", { lng: userLang }),
       flags: MessageFlags.Ephemeral,
     });
     return;
@@ -73,17 +75,19 @@ export async function execute(
   const role = interaction.options.getRole("role", true);
   if (!role) {
     await interaction.reply({
-      content: t("roleNotFound"),
+      content: t("roleNotFound", { lng: userLang }),
       flags: MessageFlags.Ephemeral,
     });
     return;
   }
-
   switch (subcommand) {
     case "notif":
       await setConfig("roleNotif", role.id);
       await interaction.reply({
-        content: t("roleManagerNotifRoleDefined", { role: `<@&${role.id}>` }),
+        content: t("roleManagerNotifRoleDefined", {
+          role: `<@&${role.id}>`,
+          lng: userLang,
+        }),
         flags: MessageFlags.Ephemeral,
       });
       break;
@@ -92,6 +96,7 @@ export async function execute(
       await interaction.reply({
         content: t("roleManagerUnverifiedRoleDefined", {
           role: `<@&${role.id}>`,
+          lng: userLang,
         }),
         flags: MessageFlags.Ephemeral,
       });
@@ -101,6 +106,7 @@ export async function execute(
       await interaction.reply({
         content: t("roleManagerSubscriberRoleDefined", {
           role: `<@&${role.id}>`,
+          lng: userLang,
         }),
         flags: MessageFlags.Ephemeral,
       });
@@ -108,27 +114,36 @@ export async function execute(
     case "t1sub":
       await setConfig("T1SubRoleId", role.id);
       await interaction.reply({
-        content: t("roleManagerT1SubRoleDefined", { role: `<@&${role.id}>` }),
+        content: t("roleManagerT1SubRoleDefined", {
+          role: `<@&${role.id}>`,
+          lng: userLang,
+        }),
         flags: MessageFlags.Ephemeral,
       });
       break;
     case "t2sub":
       await setConfig("T2SubRoleId", role.id);
       await interaction.reply({
-        content: t("roleManagerT2SubRoleDefined", { role: `<@&${role.id}>` }),
+        content: t("roleManagerT2SubRoleDefined", {
+          role: `<@&${role.id}>`,
+          lng: userLang,
+        }),
         flags: MessageFlags.Ephemeral,
       });
       break;
     case "t3sub":
       await setConfig("T3SubRoleId", role.id);
       await interaction.reply({
-        content: t("roleManagerT3SubRoleDefined", { role: `<@&${role.id}>` }),
+        content: t("roleManagerT3SubRoleDefined", {
+          role: `<@&${role.id}>`,
+          lng: userLang,
+        }),
         flags: MessageFlags.Ephemeral,
       });
       break;
     default:
       await interaction.reply({
-        content: t("unknownSubcommand"),
+        content: t("unknownSubcommand", { lng: userLang }),
         flags: MessageFlags.Ephemeral,
       });
       break;
