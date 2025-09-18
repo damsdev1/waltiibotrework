@@ -1,0 +1,12 @@
+# Skip commit if it comes from a merge or CI
+if [ "$2" = "merge" ]; then
+  exit 0
+fi
+
+# Launch Commitizen interactively
+npx --no-install commitlint --edit "$1" || {
+  exec < /dev/tty && npx cz --hook || true
+}
+
+# Exit to allow Git commit to continue
+exit 0
