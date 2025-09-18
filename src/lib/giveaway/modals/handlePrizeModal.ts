@@ -1,7 +1,10 @@
 import type { GiveawayWizard } from "@/lib/types/giveaway.js";
 import type { ModalSubmitInteraction } from "discord.js";
 
-export const handlePrizeModal = (interaction: ModalSubmitInteraction, wizard: GiveawayWizard): boolean => {
+export const handlePrizeModal = (
+  interaction: ModalSubmitInteraction,
+  wizard: GiveawayWizard,
+): boolean => {
   if (interaction.customId !== "modal_prize") {
     return false;
   }

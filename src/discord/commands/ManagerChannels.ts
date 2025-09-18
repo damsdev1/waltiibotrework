@@ -1,46 +1,80 @@
 import { setConfig } from "@/discord/ConfigManager.js";
-import type { ChatInputCommandInteraction, SlashCommandChannelOption, SlashCommandSubcommandBuilder } from "discord.js";
-import { ChannelType, MessageFlags, PermissionFlagsBits, SlashCommandBuilder } from "discord.js";
+import { getAllLocalizedTranslations, t } from "@/lib/locales/i18n.js";
+import type { TranslationKeys } from "@/lib/types/i18n.js";
+import { getUserLang } from "@/lib/utils.js";
+import type {
+  Channel,
+  ChatInputCommandInteraction,
+  SlashCommandChannelOption,
+  SlashCommandSubcommandBuilder,
+} from "discord.js";
+import {
+  ChannelType,
+  MessageFlags,
+  PermissionFlagsBits,
+  SlashCommandBuilder,
+} from "discord.js";
 
 // Helper to create a channel-setting subcommand
-const createChannelSubcommand = (name: string, description: string) => {
-  return (subcommand: SlashCommandSubcommandBuilder): SlashCommandSubcommandBuilder =>
+const createChannelSubcommand = (
+  name: string,
+  description: TranslationKeys,
+) => {
+  return (
+    subcommand: SlashCommandSubcommandBuilder,
+  ): SlashCommandSubcommandBuilder =>
     subcommand
       .setName(name)
       .setDescription(description)
+      .setDescriptionLocalizations(getAllLocalizedTranslations(description))
       .addChannelOption((option: SlashCommandChannelOption) =>
-        option.setName("salon").setDescription(description).addChannelTypes(ChannelType.GuildText).setRequired(true)
+        option
+          .setName("salon")
+          .setDescription(t("managerChannelsSlashCommandChannelOption"))
+          .setDescriptionLocalizations(
+            getAllLocalizedTranslations(
+              "managerChannelsSlashCommandChannelOption",
+            ),
+          )
+
+          .addChannelTypes(ChannelType.GuildText)
+          .setRequired(true),
       );
 };
 
 const channelValid = async (
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  channel: any,
-  interaction: ChatInputCommandInteraction
+  channel: Channel,
+  interaction: ChatInputCommandInteraction,
 ): Promise<string | null> => {
+  const userLang = getUserLang(interaction.locale);
   try {
-    const channelValidated = await interaction.guild?.channels.fetch(channel.id);
+    const channelValidated = await interaction.guild?.channels.fetch(
+      channel.id,
+    );
     if (!channelValidated || channelValidated.type !== ChannelType.GuildText) {
-      return "Le salon spécifié n'est pas un salon textuel valide.";
+      return t("managerChannelsInvalidTextChannel", { lng: userLang });
     }
     if (!interaction.guild || !interaction.guild.members.me) {
-      return "Impossible d'accéder aux informations du serveur.";
+      return t("managerChannelsNoGuildInfo", { lng: userLang });
     }
-    if (!channelValidated.permissionsFor(interaction.guild?.members.me)?.has(PermissionFlagsBits.SendMessages)) {
-      return "Je n'ai pas les permissions suffisantes pour accéder au salon.";
+    if (
+      !channelValidated
+        .permissionsFor(interaction.guild?.members.me)
+        ?.has(PermissionFlagsBits.SendMessages)
+    ) {
+      return t("managerChannelsNoSendMessagesPermission", { lng: userLang });
     }
     return null;
   } catch {
-    return "Le salon spécifié est invalide.";
+    return t("invalidChannelOrPermissions", { lng: userLang });
   }
 };
 
 const executeSubCommandChannel = async (
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  channel: any,
+  channel: Channel,
   channelKey: string,
   interaction: ChatInputCommandInteraction,
-  successMessage: string
+  successMessage: string,
 ): Promise<void> => {
   const error = await channelValid(channel, interaction);
   if (error) {
@@ -56,17 +90,37 @@ const executeSubCommandChannel = async (
 
 export const data = new SlashCommandBuilder()
   .setName("channels")
-  .setDescription("Configuration des salons")
-  .addSubcommand(createChannelSubcommand("annonce", "Définir le salon des annonces"))
-  .addSubcommand(createChannelSubcommand("logs_join", "Définir le salon des logs d'arrivée"))
-  .addSubcommand(createChannelSubcommand("logs_leave", "Définir le salon des logs de départ"))
-  .addSubcommand(createChannelSubcommand("logs_verification", "Définir le salon des logs de vérification"))
+  .setDescription(t("managerChannelsSlashCommand"))
+  .addSubcommand(
+    createChannelSubcommand(
+      "annonce",
+      "managerChannelsSlashCommandAnnouncement",
+    ),
+  )
+  .addSubcommand(
+    createChannelSubcommand("logs_join", "managerChannelsSlashCommandLogsJoin"),
+  )
+  .addSubcommand(
+    createChannelSubcommand(
+      "logs_leave",
+      "managerChannelsSlashCommandLogsLeave",
+    ),
+  )
+  .addSubcommand(
+    createChannelSubcommand(
+      "logs_verification",
+      "managerChannelsSlashCommandLogsVerification",
+    ),
+  )
   .setDefaultMemberPermissions(PermissionFlagsBits.Administrator);
 
-export async function execute(interaction: ChatInputCommandInteraction): Promise<void> {
+export async function execute(
+  interaction: ChatInputCommandInteraction,
+): Promise<void> {
+  const userLang = getUserLang(interaction.locale);
   if (!interaction.guild) {
     await interaction.reply({
-      content: "Cette commande ne peut être utilisée que dans un serveur.",
+      content: t("commandOnlyInGuild", { lng: userLang }),
       flags: MessageFlags.Ephemeral,
     });
     return;
@@ -76,7 +130,7 @@ export async function execute(interaction: ChatInputCommandInteraction): Promise
   const channel = interaction.options.getChannel("salon", true);
   if (channel.type !== ChannelType.GuildText) {
     await interaction.reply({
-      content: "Veuillez sélectionner un salon textuel valide.",
+      content: t("managerChannelsInvalidTextChannel", { lng: userLang }),
       flags: MessageFlags.Ephemeral,
     });
     return;
@@ -85,39 +139,51 @@ export async function execute(interaction: ChatInputCommandInteraction): Promise
   switch (subcommand) {
     case "annonce":
       await executeSubCommandChannel(
-        channel,
+        channel as Channel,
         "announceChannel",
         interaction,
-        `Le salon des annonces a été défini sur <#${channel.id}>.`
+        t("managerChannelsAnnouncementChannelDefined", {
+          lng: userLang,
+          channel: `<#${channel.id}>`,
+        }),
       );
       break;
     case "logs_join":
       await executeSubCommandChannel(
-        channel,
+        channel as Channel,
         "logsJoinChannel",
         interaction,
-        `Le salon des logs d'arrivée a été défini sur <#${channel.id}>.`
+        t("managerChannelsLogsJoinChannelDefined", {
+          lng: userLang,
+          channel: `<#${channel.id}>`,
+        }),
       );
       break;
     case "logs_leave":
       await executeSubCommandChannel(
-        channel,
+        channel as Channel,
         "logsLeaveChannel",
         interaction,
-        `Le salon des logs de départ a été défini sur <#${channel.id}>.`
+        t("managerChannelsLogsLeaveChannelDefined", {
+          lng: userLang,
+          channel: `<#${channel.id}>`,
+        }),
       );
       break;
     case "logs_verification":
       await executeSubCommandChannel(
-        channel,
+        channel as Channel,
         "logsVerificationChannel",
         interaction,
-        `Le salon des logs de vérification a été défini sur <#${channel.id}>.`
+        t("managerChannelsLogsVerificationChannelDefined", {
+          lng: userLang,
+          channel: `<#${channel.id}>`,
+        }),
       );
       break;
     default:
       await interaction.reply({
-        content: "Sous-commande inconnue.",
+        content: t("unknownSubcommand", { lng: userLang }),
         flags: MessageFlags.Ephemeral,
       });
       break;

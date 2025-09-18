@@ -1,5 +1,6 @@
 // GiveawayScheduler.ts
 import type { Giveaway, GiveawayEntry } from "@/../generated/prisma/index.js";
+import { t } from "@/lib/locales/i18n.js";
 import { prisma } from "@/lib/prisma.js";
 import crypto from "crypto";
 import type { Client } from "discord.js";
@@ -25,7 +26,9 @@ const weightedPick = (items: string[], weights: number[]): string => {
   // If not returned in loop, return the last item as a fallback
   return items[items.length - 1];
 };
-const processGiveawayEnd = (giveawayEntries: GiveawayEntry[]): string | null => {
+const processGiveawayEnd = (
+  giveawayEntries: GiveawayEntry[],
+): string | null => {
   if (giveawayEntries.length === 0) {
     return null;
   }
@@ -42,7 +45,10 @@ const processGiveawayEnd = (giveawayEntries: GiveawayEntry[]): string | null => 
 /**
  * Schedule a single giveaway
  */
-export const scheduleGiveaway = (giveaway: { id: number; endTime: Date }): void => {
+export const scheduleGiveaway = (giveaway: {
+  id: number;
+  endTime: Date;
+}): void => {
   // Clear existing timeout if any
   const existingTimeout = GiveawaySchedulerMap.get(giveaway.id);
   if (existingTimeout) clearTimeout(existingTimeout);
@@ -59,27 +65,49 @@ export const scheduleGiveaway = (giveaway: { id: number; endTime: Date }): void 
       if (winner) {
         if (DiscordClient && DiscordClient.isReady()) {
           try {
-            const giveawayData = await prisma.giveaway.findUnique({ where: { id: giveaway.id } });
-            if (!giveawayData || !giveawayData.channelId || !giveawayData.messageId) {
-              console.error(`Giveaway data not found for ID: ${giveaway.id} or missing channel/message ID`);
+            const giveawayData = await prisma.giveaway.findUnique({
+              where: { id: giveaway.id },
+            });
+            if (
+              !giveawayData ||
+              !giveawayData.channelId ||
+              !giveawayData.messageId
+            ) {
+              console.error(
+                `Giveaway data not found for ID: ${giveaway.id} or missing channel/message ID`,
+              );
               return;
             }
-            const channel = await DiscordClient.channels.fetch(giveawayData.channelId);
+            const channel = await DiscordClient.channels.fetch(
+              giveawayData.channelId,
+            );
             if (!channel || !channel.isTextBased()) {
-              console.error(`Channel not found or not text-based for ID: ${giveawayData.channelId}`);
+              console.error(
+                `Channel not found or not text-based for ID: ${giveawayData.channelId}`,
+              );
               return;
             }
-            const message = await channel.messages.fetch(giveawayData.messageId);
+            const message = await channel.messages.fetch(
+              giveawayData.messageId,
+            );
             if (!message) {
-              console.error(`Message not found for ID: ${giveawayData.messageId}`);
+              console.error(
+                `Message not found for ID: ${giveawayData.messageId}`,
+              );
               return;
             }
             await message.edit({
-              content: `🎉 Congratulations <@${winner}>! You won the giveaway for **${giveawayData.prize}**! 🎉`,
+              content: t("giveawayEndedWinnerAnnouncement", {
+                winnerId: `<@${winner}>`,
+                prize: giveawayData.prize,
+              }),
               components: [],
             });
           } catch (error) {
-            console.error(`Error fetching giveaway data for ID: ${giveaway.id}`, error);
+            console.error(
+              `Error fetching giveaway data for ID: ${giveaway.id}`,
+              error,
+            );
             return;
           }
         }
@@ -90,7 +118,7 @@ export const scheduleGiveaway = (giveaway: { id: number; endTime: Date }): void 
       });
       GiveawaySchedulerMap.delete(giveaway.id);
     },
-    Math.max(timeDiff, 0)
+    Math.max(timeDiff, 0),
   ); // if timeDiff <= 0, triggers immediately
 
   GiveawaySchedulerMap.set(giveaway.id, timeout);
@@ -99,7 +127,9 @@ export const scheduleGiveaway = (giveaway: { id: number; endTime: Date }): void 
 /**
  * Initialize scheduler on bot startup
  */
-export const initializeGiveawayScheduler = async (client: Client): Promise<void> => {
+export const initializeGiveawayScheduler = async (
+  client: Client,
+): Promise<void> => {
   // Schedule all giveaways, including past ones
   const giveaways = await prisma.giveaway.findMany({
     where: { ended: false },
@@ -115,7 +145,10 @@ export const initializeGiveawayScheduler = async (client: Client): Promise<void>
  * Add a new giveaway in real-time
  */
 export const addGiveaway = async (
-  data: Omit<Giveaway, "id" | "ended" | "createdAt" | "updatedAt" | "winnerUserId">
+  data: Omit<
+    Giveaway,
+    "id" | "ended" | "createdAt" | "updatedAt" | "winnerUserId"
+  >,
 ): Promise<Giveaway> => {
   const newGiveaway = await prisma.giveaway.create({
     data: {
@@ -145,5 +178,4 @@ export const cancelGiveaway = async (id: number): Promise<void> => {
     where: { id },
     data: { ended: true },
   });
-
 };

@@ -6,13 +6,18 @@ import { EmbedBuilder, Events } from "discord.js";
 export const name = Events.GuildMemberRemove;
 export const once = false;
 
-const sendMessageLeave = async (member: GuildMember, createdTimeAgo: number): Promise<void> => {
+const sendMessageLeave = async (
+  member: GuildMember,
+  createdTimeAgo: number,
+): Promise<void> => {
   const logsLeaveChannelId = getConfig("logsLeaveChannel");
   if (!logsLeaveChannelId) {
     return;
   }
   try {
-    const logsLeaveChannel = await member.guild.channels.fetch(String(logsLeaveChannelId));
+    const logsLeaveChannel = await member.guild.channels.fetch(
+      String(logsLeaveChannelId),
+    );
     if (!logsLeaveChannel || !logsLeaveChannel.isTextBased()) {
       console.error("Le salon de logs de leave n'est pas un salon textuel.");
       return;
@@ -53,7 +58,10 @@ const sendMessageLeave = async (member: GuildMember, createdTimeAgo: number): Pr
       try {
         await logsLeaveChannel.send({ embeds: [leaveEmbed] });
       } catch (error) {
-        console.error("Erreur lors de l'envoi du message de logs de leave :", error);
+        console.error(
+          "Erreur lors de l'envoi du message de logs de leave :",
+          error,
+        );
       }
     } else {
       const leaveEmbedBuilder = new EmbedBuilder()
@@ -75,7 +83,7 @@ const sendMessageLeave = async (member: GuildMember, createdTimeAgo: number): Pr
             name: "Sur le serveur depuis",
             value: dateDiff(member.joinedAt ?? new Date()),
             inline: false,
-          }
+          },
         )
         .setTimestamp(new Date(member.user.createdAt.getTime()))
         .setFooter({ text: `Développé par <@1123262077876850698>` });
@@ -90,15 +98,24 @@ const sendMessageLeave = async (member: GuildMember, createdTimeAgo: number): Pr
       try {
         await logsLeaveChannel.send({ embeds: [leaveEmbedBuilder] });
       } catch (error) {
-        console.error("Erreur lors de l'envoi du message de logs de leave :", error);
+        console.error(
+          "Erreur lors de l'envoi du message de logs de leave :",
+          error,
+        );
       }
     }
   } catch (error) {
-    console.error("Erreur lors de la récupération du salon de logs de leave :", error);
+    console.error(
+      "Erreur lors de la récupération du salon de logs de leave :",
+      error,
+    );
   }
 };
 
 export const execute = async (member: GuildMember): Promise<void> => {
-  const createdTimeAgo = Math.ceil((new Date().getTime() - member.user.createdAt.getTime()) / (1000 * 3600 * 24));
+  const createdTimeAgo = Math.ceil(
+    (new Date().getTime() - member.user.createdAt.getTime()) /
+      (1000 * 3600 * 24),
+  );
   await sendMessageLeave(member, createdTimeAgo);
 };

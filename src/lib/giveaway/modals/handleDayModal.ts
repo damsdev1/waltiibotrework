@@ -1,7 +1,12 @@
+import { t } from "@/lib/locales/i18n.js";
 import type { GiveawayWizard } from "@/lib/types/giveaway.js";
+import { getUserLang } from "@/lib/utils.js";
 import type { ModalSubmitInteraction } from "discord.js";
 
-export const handleDayModal = async (interaction: ModalSubmitInteraction, wizard: GiveawayWizard): Promise<boolean> => {
+export const handleDayModal = async (
+  interaction: ModalSubmitInteraction,
+  wizard: GiveawayWizard,
+): Promise<boolean> => {
   if (interaction.customId !== "modal_day") {
     return false;
   }
@@ -17,8 +22,17 @@ export const handleDayModal = async (interaction: ModalSubmitInteraction, wizard
   }
 
   const today = new Date();
-  if (year === today.getFullYear() && month === today.getMonth() + 1 && day < today.getDate()) {
-    await interaction.reply({ content: "La date ne peut pas être dans le passé!", ephemeral: true });
+  if (
+    year === today.getFullYear() &&
+    month === today.getMonth() + 1 &&
+    day < today.getDate()
+  ) {
+    await interaction.reply({
+      content: t("giveawayWizardHandleDatePast", {
+        lng: getUserLang(interaction.locale),
+      }),
+      ephemeral: true,
+    });
     return true;
   }
 

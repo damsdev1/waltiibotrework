@@ -11,9 +11,7 @@
     "isolatedModules": true,
     "outDir": "dist",
     "paths": {
-      "@/*": [
-        "./src/*"
-      ]
-    },
-  },
+      "@/*": ["./src/*"]
+    }
+  }
 }

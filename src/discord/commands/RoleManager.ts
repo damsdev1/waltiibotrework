@@ -1,33 +1,69 @@
 import { setConfig } from "@/discord/ConfigManager.js";
-import type { ChatInputCommandInteraction, SlashCommandRoleOption, SlashCommandSubcommandBuilder } from "discord.js";
-import { MessageFlags, PermissionFlagsBits, SlashCommandBuilder } from "discord.js";
+import { getAllLocalizedTranslations, t } from "@/lib/locales/i18n.js";
+import type { TranslationKeys } from "@/lib/types/i18n.js";
+import type {
+  ChatInputCommandInteraction,
+  SlashCommandRoleOption,
+  SlashCommandSubcommandBuilder,
+} from "discord.js";
+import {
+  MessageFlags,
+  PermissionFlagsBits,
+  SlashCommandBuilder,
+} from "discord.js";
 
 // Helper to create a channel-setting subcommand
-const createChannelSubcommand = (name: string, description: string) => {
-  return (subcommand: SlashCommandSubcommandBuilder): SlashCommandSubcommandBuilder =>
+const createChannelSubcommand = (
+  name: string,
+  description: TranslationKeys,
+) => {
+  return (
+    subcommand: SlashCommandSubcommandBuilder,
+  ): SlashCommandSubcommandBuilder =>
     subcommand
       .setName(name)
-      .setDescription(description)
+      .setDescription(t(description))
+      .setDescriptionLocalizations(getAllLocalizedTranslations(description))
       .addRoleOption((option: SlashCommandRoleOption) =>
-        option.setName("role").setDescription(description).setRequired(true)
+        option
+          .setName("role")
+          .setDescription(t("roleManagerSlashCommandRoleOption"))
+          .setDescriptionLocalizations(
+            getAllLocalizedTranslations("roleManagerSlashCommandRoleOption"),
+          )
+          .setRequired(true),
       );
 };
 
 export const data = new SlashCommandBuilder()
   .setName("roles")
-  .setDescription("Configuration des salons")
-  .addSubcommand(createChannelSubcommand("notif", "Définir le rôle des notifications"))
-  .addSubcommand(createChannelSubcommand("unverified", "Définir le rôle des non vérifiés"))
-  .addSubcommand(createChannelSubcommand("subscriber", "Définir le rôle des subscribers"))
-  .addSubcommand(createChannelSubcommand("t1sub", "Définir le rôle des T1 subscribers"))
-  .addSubcommand(createChannelSubcommand("t2sub", "Définir le rôle des T2 subscribers"))
-  .addSubcommand(createChannelSubcommand("t3sub", "Définir le rôle des T3 subscribers"))
+  .setDescription(t("roleManagerSlashCommand"))
+  .addSubcommand(
+    createChannelSubcommand("notif", "roleManagerSlashCommandNotif"),
+  )
+  .addSubcommand(
+    createChannelSubcommand("unverified", "roleManagerSlashCommandUnverified"),
+  )
+  .addSubcommand(
+    createChannelSubcommand("subscriber", "roleManagerSlashCommandSubscriber"),
+  )
+  .addSubcommand(
+    createChannelSubcommand("t1sub", "roleManagerSlashCommandT1Sub"),
+  )
+  .addSubcommand(
+    createChannelSubcommand("t2sub", "roleManagerSlashCommandT2Sub"),
+  )
+  .addSubcommand(
+    createChannelSubcommand("t3sub", "roleManagerSlashCommandT3Sub"),
+  )
   .setDefaultMemberPermissions(PermissionFlagsBits.Administrator);
 
-export async function execute(interaction: ChatInputCommandInteraction): Promise<void> {
+export async function execute(
+  interaction: ChatInputCommandInteraction,
+): Promise<void> {
   if (!interaction.guild) {
     await interaction.reply({
-      content: "Cette commande ne peut être utilisée que dans un serveur.",
+      content: t("commandOnlyInGuild"),
       flags: MessageFlags.Ephemeral,
     });
     return;
@@ -37,7 +73,7 @@ export async function execute(interaction: ChatInputCommandInteraction): Promise
   const role = interaction.options.getRole("role", true);
   if (!role) {
     await interaction.reply({
-      content: "Veuillez sélectionner un rôle valide.",
+      content: t("roleNotFound"),
       flags: MessageFlags.Ephemeral,
     });
     return;
@@ -47,48 +83,52 @@ export async function execute(interaction: ChatInputCommandInteraction): Promise
     case "notif":
       await setConfig("roleNotif", role.id);
       await interaction.reply({
-        content: `Le rôle de notification a été défini sur <@&${role.id}>.`,
+        content: t("roleManagerNotifRoleDefined", { role: `<@&${role.id}>` }),
         flags: MessageFlags.Ephemeral,
       });
       break;
     case "unverified":
       await setConfig("roleUnverified", role.id);
       await interaction.reply({
-        content: `Le rôle des non vérifiés a été défini sur <@&${role.id}>.`,
+        content: t("roleManagerUnverifiedRoleDefined", {
+          role: `<@&${role.id}>`,
+        }),
         flags: MessageFlags.Ephemeral,
       });
       break;
     case "subscriber":
       await setConfig("subscriberRoleId", role.id);
       await interaction.reply({
-        content: `Le rôle de subscriber a été défini sur <@&${role.id}>.`,
+        content: t("roleManagerSubscriberRoleDefined", {
+          role: `<@&${role.id}>`,
+        }),
         flags: MessageFlags.Ephemeral,
       });
       break;
     case "t1sub":
       await setConfig("T1SubRoleId", role.id);
       await interaction.reply({
-        content: `Le rôle de T1 subscriber a été défini sur <@&${role.id}>.`,
+        content: t("roleManagerT1SubRoleDefined", { role: `<@&${role.id}>` }),
         flags: MessageFlags.Ephemeral,
       });
       break;
     case "t2sub":
       await setConfig("T2SubRoleId", role.id);
       await interaction.reply({
-        content: `Le rôle de T2 subscriber a été défini sur <@&${role.id}>.`,
+        content: t("roleManagerT2SubRoleDefined", { role: `<@&${role.id}>` }),
         flags: MessageFlags.Ephemeral,
       });
       break;
     case "t3sub":
       await setConfig("T3SubRoleId", role.id);
       await interaction.reply({
-        content: `Le rôle de T3 subscriber a été défini sur <@&${role.id}>.`,
+        content: t("roleManagerT3SubRoleDefined", { role: `<@&${role.id}>` }),
         flags: MessageFlags.Ephemeral,
       });
       break;
     default:
       await interaction.reply({
-        content: "Sous-commande inconnue.",
+        content: t("unknownSubcommand"),
         flags: MessageFlags.Ephemeral,
       });
       break;

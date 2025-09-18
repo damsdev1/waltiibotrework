@@ -1,12 +1,14 @@
-import { DiscordFetchAPIError } from '@/lib/discord/DiscordFetchAPIError.js';
-import { prisma } from '@/lib/prisma.js';
-import type { UserWithoutId } from '@/lib/types/db.js';
-import type { DiscordOAuth2Token } from '@/lib/validators/discord.js';
-import { request } from 'urllib';
+import { DiscordFetchAPIError } from "@/lib/discord/DiscordFetchAPIError.js";
+import { prisma } from "@/lib/prisma.js";
+import type { UserWithoutId } from "@/lib/types/db.js";
+import type { DiscordOAuth2Token } from "@/lib/validators/discord.js";
+import { request } from "urllib";
 
 type FetchResult = { status: number } & Record<string, unknown>;
 
-async function refreshDiscordToken(refreshToken: string): Promise<UserWithoutId> {
+async function refreshDiscordToken(
+  refreshToken: string,
+): Promise<UserWithoutId> {
   const response = await request("https://discord.com/api/oauth2/token", {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -32,7 +34,7 @@ async function refreshDiscordToken(refreshToken: string): Promise<UserWithoutId>
 }
 export async function withDiscordToken<T>(
   tokenData: UserWithoutId,
-  fetchFn: (accessToken: string) => Promise<T>
+  fetchFn: (accessToken: string) => Promise<T>,
 ): Promise<{ data: T; tokenData: UserWithoutId }> {
   let updated = false;
 

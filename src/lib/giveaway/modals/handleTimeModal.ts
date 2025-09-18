@@ -1,9 +1,11 @@
+import { t } from "@/lib/locales/i18n.js";
 import type { GiveawayWizard } from "@/lib/types/giveaway.js";
+import { getUserLang } from "@/lib/utils.js";
 import type { ModalSubmitInteraction } from "discord.js";
 
 export const handleTimeModal = async (
   interaction: ModalSubmitInteraction,
-  wizard: GiveawayWizard
+  wizard: GiveawayWizard,
 ): Promise<boolean> => {
   if (interaction.customId !== "modal_time") {
     return false;
@@ -13,14 +15,28 @@ export const handleTimeModal = async (
   const [h, m] = timeVal.split(":").map(Number);
 
   if (isNaN(h) || isNaN(m) || h < 0 || h > 23 || m < 0 || m > 59) {
-    await interaction.reply({ content: "Format de temps invalide HH:MM", ephemeral: true });
+    await interaction.reply({
+      content: "Format de temps invalide HH:MM",
+      ephemeral: true,
+    });
     return true;
   }
 
-  const chosenDate = new Date(Number(wizard.data.year), Number(wizard.data.month) - 1, Number(wizard.data.day), h, m);
+  const chosenDate = new Date(
+    Number(wizard.data.year),
+    Number(wizard.data.month) - 1,
+    Number(wizard.data.day),
+    h,
+    m,
+  );
 
   if (chosenDate < new Date()) {
-    await interaction.reply({ content: "La date ne peut pas être dans le passé!", ephemeral: true });
+    await interaction.reply({
+      content: t("giveawayWizardHandleDatePast", {
+        lng: getUserLang(interaction.locale),
+      }),
+      ephemeral: true,
+    });
     return true;
   }
 

@@ -1,45 +1,135 @@
 import { wizards } from "@/lib/Store.js";
-import { generatePageComponents, generateWizardEmbed, getYearOptions } from "@/lib/giveaway/GiveawayUtils.js";
-import { prisma } from '@/lib/prisma.js';
-import type { GiveawayWizardPage } from '@/lib/types/giveaway.js';
-import type { AutocompleteInteraction, ChatInputCommandInteraction } from "discord.js";
-import { InteractionContextType, MessageFlags, PermissionFlagsBits, SlashCommandBuilder } from "discord.js";
+import {
+  generatePageComponents,
+  generateWizardEmbed,
+  getYearOptions,
+  isSubscribersRolesConfigured,
+} from "@/lib/giveaway/GiveawayUtils.js";
+import { getAllLocalizedTranslations, t } from "@/lib/locales/i18n.js";
+import { prisma } from "@/lib/prisma.js";
+import type { GiveawayWizardPage } from "@/lib/types/giveaway.js";
+import { getUserLang } from "@/lib/utils.js";
+import type {
+  AutocompleteInteraction,
+  ChatInputCommandInteraction,
+} from "discord.js";
+import {
+  InteractionContextType,
+  MessageFlags,
+  PermissionFlagsBits,
+  SlashCommandBuilder,
+} from "discord.js";
 
 export const data = new SlashCommandBuilder()
   .setName("giveaway")
-  .setDescription("Commande giveaway")
+  .setDescription(t("giveawaySlashCommand"))
+  .setDescriptionLocalizations(
+    getAllLocalizedTranslations("giveawaySlashCommand"),
+  )
   .addSubcommandGroup((group) =>
     group
       .setName("create")
-      .setDescription("Créer un giveaway")
-      .addSubcommand((subcommand) =>
-        subcommand.setName("sub").setDescription("Créer un giveaway pour les subscribers uniquement")
+      .setDescription(t("giveawaySlashCommandCreate"))
+      .setDescriptionLocalizations(
+        getAllLocalizedTranslations("giveawaySlashCommandCreate"),
       )
-      .addSubcommand((subcommand) => subcommand.setName("all").setDescription("Créer un giveaway pour tous"))
+      .addSubcommand((subcommand) =>
+        subcommand
+          .setName("sub")
+          .setDescription(t("giveawaySlashCommandCreateSub"))
+          .setDescriptionLocalizations(
+            getAllLocalizedTranslations("giveawaySlashCommandCreateSub"),
+          ),
+      )
+      .addSubcommand((subcommand) =>
+        subcommand
+          .setName("all")
+          .setDescription(t("giveawaySlashCommandCreateAll"))
+          .setDescriptionLocalizations(
+            getAllLocalizedTranslations("giveawaySlashCommandCreateAll"),
+          ),
+      ),
   )
   .addSubcommand((subcommand) =>
-    subcommand.setName("delete").setDescription("Supprimer un giveaway existant (non implémenté)").addStringOption((option) =>
-      option.setName("id").setDescription("ID du giveaway à supprimer").setRequired(true).setAutocomplete(true)
-    ))
+    subcommand
+      .setName("delete")
+      .setDescription(t("giveawaySlashCommandDelete"))
+      .setDescriptionLocalizations(
+        getAllLocalizedTranslations("giveawaySlashCommandDelete"),
+      )
+      .addStringOption((option) =>
+        option
+          .setName("id")
+          .setDescription(t("giveawaySlashCommandDeleteId"))
+          .setDescriptionLocalizations(
+            getAllLocalizedTranslations("giveawaySlashCommandDeleteId"),
+          )
+          .setRequired(true)
+          .setAutocomplete(true),
+      ),
+  )
   .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
   .setContexts(InteractionContextType.Guild);
 
-export const execute = async (interaction: ChatInputCommandInteraction): Promise<void> => {
+export const execute = async (
+  interaction: ChatInputCommandInteraction,
+): Promise<void> => {
+  const userLang = getUserLang(interaction.locale);
   const subcommandGroup = interaction.options.getSubcommandGroup();
   if (subcommandGroup === "create") {
+    if (
+      interaction.options.getSubcommand() === "sub" &&
+      !isSubscribersRolesConfigured()
+    ) {
+      await interaction.reply({
+        content: t("giveawaySubNotConfiguredAdmin", { lng: userLang }),
+        flags: MessageFlags.Ephemeral,
+      });
+      return;
+    }
     const pages: GiveawayWizardPage[] = [
-      { type: "modal", key: "prize", label: "Renseigner la récompense", modalId: "modal_prize", placeholder: "Renseigner la récompense" },
-      { type: "select", key: "year", label: "Choisir l'année", options: getYearOptions() },
-      { type: "select", key: "month", label: "Choisir le mois", options: [] },
-      { type: "modal", key: "day", label: "Choisir le jour", modalId: "modal_day", placeholder: "Jour" },
-      { type: "modal", key: "time", label: "Choisir l'heure", modalId: "modal_time", placeholder: "HH:MM" },
-      { type: "save", key: "save", label: "Sauvegarder" },
+      {
+        type: "modal",
+        key: "prize",
+        label: t("giveawayEnterPrize", { lng: userLang }),
+        modalId: "modal_prize",
+        placeholder: t("giveawayEnterPrize", { lng: userLang }),
+      },
+      {
+        type: "select",
+        key: "year",
+        label: t("giveawayChooseYear", { lng: userLang }),
+        options: getYearOptions(),
+      },
+      {
+        type: "select",
+        key: "month",
+        label: t("giveawayChooseMonth", { lng: userLang }),
+        options: [],
+      },
+      {
+        type: "modal",
+        key: "day",
+        label: t("giveawayChooseDay", { lng: userLang }),
+        modalId: "modal_day",
+        placeholder: "11",
+      },
+      {
+        type: "modal",
+        key: "time",
+        label: t("giveawayChooseTime", { lng: userLang }),
+        modalId: "modal_time",
+        placeholder: "HH:MM",
+      },
+      { type: "save", key: "save", label: t("save", { lng: userLang }) },
     ];
 
     const reply = await interaction.reply({
-      content: "Configuration du giveaway:",
-      embeds: [generateWizardEmbed()],
-      components: generatePageComponents({ pages, pageIndex: 0 }).map((row) => row.toJSON()),
+      content: t("giveawaySetup", { lng: userLang }),
+      embeds: [generateWizardEmbed({}, userLang)],
+      components: generatePageComponents({ pages, pageIndex: 0 }, userLang).map(
+        (row) => row.toJSON(),
+      ),
       withResponse: true,
       flags: MessageFlags.Ephemeral,
     });
@@ -55,18 +145,31 @@ export const execute = async (interaction: ChatInputCommandInteraction): Promise
     const subcommand = interaction.options.getSubcommand();
     if (subcommand === "delete") {
       const giveawayId = interaction.options.getString("id", true);
-      const giveaway = await prisma.giveaway.findUnique({ where: { id: parseInt(giveawayId) } });
+      const giveaway = await prisma.giveaway.findUnique({
+        where: { id: parseInt(giveawayId) },
+      });
       if (!giveaway) {
-        await interaction.reply({ content: "Giveaway non trouvé.", flags: MessageFlags.Ephemeral });
+        await interaction.reply({
+          content: t("giveawayNotFound", { lng: userLang }),
+          flags: MessageFlags.Ephemeral,
+        });
         return;
       }
       if (!giveaway.channelId) {
-        await interaction.reply({ content: "Salon invalide ou permissions insuffisantes", flags: MessageFlags.Ephemeral });
+        await interaction.reply({
+          content: t("invalidChannelOrPermissions", { lng: userLang }),
+          flags: MessageFlags.Ephemeral,
+        });
         return;
       }
-      const channel = await interaction.client.channels.fetch(giveaway.channelId);
+      const channel = await interaction.client.channels.fetch(
+        giveaway.channelId,
+      );
       if (!channel || !channel.isTextBased()) {
-        await interaction.reply({ content: "Salon invalide ou permissions insuffisantes", flags: MessageFlags.Ephemeral });
+        await interaction.reply({
+          content: t("invalidChannelOrPermissions", { lng: userLang }),
+          flags: MessageFlags.Ephemeral,
+        });
         return;
       }
       try {
@@ -77,17 +180,30 @@ export const execute = async (interaction: ChatInputCommandInteraction): Promise
           }
         }
         await prisma.giveaway.delete({ where: { id: giveaway.id } });
-        await interaction.reply({ content: `Le giveaway '${giveaway.prize}' a été supprimé.`, flags: MessageFlags.Ephemeral });
+        await interaction.reply({
+          content: t("giveawayDeleted", {
+            prize: giveaway.prize,
+            lng: userLang,
+          }),
+          flags: MessageFlags.Ephemeral,
+        });
       } catch {
-        console.error(`Failed to delete message with ID: ${giveaway.messageId}`);
-        await interaction.reply({ content: "Le giveaway a été supprimé de la base de données, mais le message n'a pas pu être supprimé.", flags: MessageFlags.Ephemeral });
+        console.error(
+          `Failed to delete message with ID: ${giveaway.messageId}`,
+        );
+        await interaction.reply({
+          content: t("giveawayDeletedDBOnly", { lng: userLang }),
+          flags: MessageFlags.Ephemeral,
+        });
       }
     } else {
-      await interaction.reply("Sous-commande inconnue.");
+      await interaction.reply(t("unknownSubcommand", { lng: userLang }));
     }
-  };
-}
-export const autocomplete = async (interaction: AutocompleteInteraction): Promise<void> => {
+  }
+};
+export const autocomplete = async (
+  interaction: AutocompleteInteraction,
+): Promise<void> => {
   const focusedValue = interaction.options.getFocused();
   const choices = await prisma.giveaway.findMany({
     where: {
@@ -99,6 +215,6 @@ export const autocomplete = async (interaction: AutocompleteInteraction): Promis
     choices.map((choice) => ({
       name: String(choice.prize),
       value: String(choice.id),
-    }))
+    })),
   );
 };

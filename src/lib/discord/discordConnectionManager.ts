@@ -4,7 +4,7 @@ import type { DiscordConnections } from "@/lib/validators/discord.js";
 export const handleDiscordConnectionsTx = async (
   tx: Prisma.TransactionClient,
   discordUserId: string,
-  connections: DiscordConnections
+  connections: DiscordConnections,
 ): Promise<void> => {
   for (const connection of connections) {
     // remove this connection from any other users

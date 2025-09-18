@@ -1,9 +1,19 @@
 import { getConfig } from "@/discord/ConfigManager.js";
+import { isSubscribersRolesConfigured } from "@/lib/giveaway/GiveawayUtils.js";
+import { t } from "@/lib/locales/i18n.js";
 import { prisma } from "@/lib/prisma.js";
+import { getUserLang } from "@/lib/utils.js";
 import type { ButtonInteraction, GuildMember } from "discord.js";
-import { ActionRowBuilder, ButtonBuilder, ButtonStyle, MessageFlags } from "discord.js";
+import {
+  ActionRowBuilder,
+  ButtonBuilder,
+  ButtonStyle,
+  MessageFlags,
+} from "discord.js";
 
-const calculateGiveawayChances = (member: GuildMember | null | undefined): number => {
+const calculateGiveawayChances = (
+  member: GuildMember | null | undefined,
+): number => {
   const T3SubRoleId = getConfig<string>("T3SubRoleId");
   const T2SubRoleId = getConfig<string>("T2SubRoleId");
   const T1SubRoleId = getConfig<string>("T1SubRoleId");
@@ -23,49 +33,63 @@ const calculateGiveawayChances = (member: GuildMember | null | undefined): numbe
   return 1; // Default: 1 chance for regular subscribers or non-subs
 };
 
-export const handleGiveawayJoin = async (interaction: ButtonInteraction): Promise<boolean> => {
+export const handleGiveawayJoin = async (
+  interaction: ButtonInteraction,
+): Promise<boolean> => {
   if (!interaction.customId.startsWith("giveaway_join_")) {
     return false;
   }
+  const userLang = getUserLang(interaction.locale);
 
   const interactionId = interaction.customId.replace("giveaway_join_", "");
-  const giveaway = await prisma.giveaway.findUnique({ where: { interactionId } });
+  const giveaway = await prisma.giveaway.findUnique({
+    where: { interactionId },
+  });
   if (!giveaway) {
-    await interaction.reply({ content: "Giveaway not found!", ephemeral: true });
+    await interaction.reply({
+      content: t("giveawayNotFound", { lng: userLang }),
+      ephemeral: true,
+    });
     return true;
   }
 
   if (giveaway.ended) {
-    await interaction.reply({ content: "This giveaway has already ended.", ephemeral: true });
+    await interaction.reply({
+      content: t("giveawayAlreadyEnded", { lng: userLang }),
+      ephemeral: true,
+    });
     return true;
   }
 
   const existingEntry = await prisma.giveawayEntry.findUnique({
-    where: { GiveawayUser: { giveawayId: giveaway.id, userId: interaction.user.id } },
+    where: {
+      GiveawayUser: { giveawayId: giveaway.id, userId: interaction.user.id },
+    },
   });
   if (existingEntry) {
-    await interaction.reply({ content: "You have already entered this giveaway!", ephemeral: true });
+    await interaction.reply({
+      content: t("giveawayAlreadyEntered", { lng: userLang }),
+      ephemeral: true,
+    });
     return true;
   }
 
   if (giveaway.subOnly) {
     const member = await interaction.guild?.members.fetch(interaction.user.id);
-    const subscriberRoleId = getConfig<string>("subscriberRoleId");
-    const T1SubRoleId = getConfig<string>("T1SubRoleId");
-    const T2SubRoleId = getConfig<string>("T2SubRoleId");
-    const T3SubRoleId = getConfig<string>("T3SubRoleId");
-    if (!subscriberRoleId && !T1SubRoleId && !T2SubRoleId && !T3SubRoleId) {
+
+    if (!isSubscribersRolesConfigured()) {
       await interaction.reply({
-        content: "Les rôles de sub ne sont pas configurés. Veuillez contacter un administrateur.",
+        content: t("giveawaySubNotConfigured", { lng: userLang }),
         ephemeral: true,
       });
       return true;
     }
-
+    const subscriberRoleId = getConfig<string>("subscriberRoleId");
     if (!member?.roles.cache.has(subscriberRoleId!)) {
       await interaction.reply({
-        content:
-          "Ce giveaway est réservé aux subs ! Veuillez lier votre compte Twitch à votre compte Discord pour pouvoir participer !",
+        content: t("giveawayOnlyForSubNeedDiscordTwitchLinking", {
+          lng: userLang,
+        }),
         ephemeral: true,
       });
       return true;
@@ -81,13 +105,14 @@ export const handleGiveawayJoin = async (interaction: ButtonInteraction): Promis
         .setStyle(ButtonStyle.Link)
         .setURL(
           `https://discord.com/oauth2/authorize?client_id=${process.env.CLIENT_ID}&response_type=code&redirect_uri=${encodeURIComponent(
-            process.env.REDIRECT_URI || "http://localhost:3000/oauth2"
-          )}&scope=identify+connections`
+            process.env.REDIRECT_URI || "http://localhost:3000/oauth2",
+          )}&scope=identify+connections`,
         );
-      const row = new ActionRowBuilder<ButtonBuilder>().addComponents(authorizeButton);
+      const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
+        authorizeButton,
+      );
       await interaction.reply({
-        content:
-          "Ce giveaway est réservé aux subs ! Veuillez autoriser le bot à voir vos connexions en cliquant sur ce bouton:",
+        content: t("giveawayOnlyForSubNeedAuthorizeDiscord", { lng: userLang }),
         components: [row],
         flags: MessageFlags.Ephemeral,
       });
@@ -101,11 +126,19 @@ export const handleGiveawayJoin = async (interaction: ButtonInteraction): Promis
         chances,
       },
     });
-    await interaction.reply({ content: "You have successfully entered the giveaway!", ephemeral: true });
+    await interaction.reply({
+      content: t("giveawayEnteredSuccessfully", { lng: userLang }),
+      ephemeral: true,
+    });
     return true;
   }
 
-  await prisma.giveawayEntry.create({ data: { giveawayId: giveaway.id, userId: interaction.user.id } });
-  await interaction.reply({ content: "You have successfully entered the giveaway!", ephemeral: true });
+  await prisma.giveawayEntry.create({
+    data: { giveawayId: giveaway.id, userId: interaction.user.id },
+  });
+  await interaction.reply({
+    content: t("giveawayEnteredSuccessfully", { lng: userLang }),
+    ephemeral: true,
+  });
   return true;
 };

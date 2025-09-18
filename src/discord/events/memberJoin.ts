@@ -12,7 +12,9 @@ const sendMessageJoin = async (member: GuildMember): Promise<void> => {
     return;
   }
   try {
-    const logsJoinChannel = await member.guild.channels.fetch(String(logsJoinChannelId));
+    const logsJoinChannel = await member.guild.channels.fetch(
+      String(logsJoinChannelId),
+    );
     if (!logsJoinChannel || !logsJoinChannel.isTextBased()) {
       console.error("Le salon de logs de join n'est pas un salon textuel.");
       return;
@@ -41,10 +43,16 @@ const sendMessageJoin = async (member: GuildMember): Promise<void> => {
     try {
       await logsJoinChannel.send({ embeds: [joinEmbed] });
     } catch (error) {
-      console.error("Erreur lors de l'envoi du message de logs de join :", error);
+      console.error(
+        "Erreur lors de l'envoi du message de logs de join :",
+        error,
+      );
     }
   } catch (error) {
-    console.error("Erreur lors de la récupération du salon de logs de join :", error);
+    console.error(
+      "Erreur lors de la récupération du salon de logs de join :",
+      error,
+    );
   }
 };
 
@@ -59,7 +67,10 @@ const setNotifRole = async (member: GuildMember): Promise<void> => {
       }
       await member.roles.add(notifRole);
     } catch (error) {
-      console.error("Erreur lors de la récupération du rôle de notification :", error);
+      console.error(
+        "Erreur lors de la récupération du rôle de notification :",
+        error,
+      );
       return;
     }
   }
@@ -72,7 +83,10 @@ export const execute = async (member: GuildMember): Promise<void> => {
   }
 
   await setNotifRole(member);
-  const createdTimeAgo = Math.ceil((new Date().getTime() - member.user.createdAt.getTime()) / (1000 * 3600 * 24));
+  const createdTimeAgo = Math.ceil(
+    (new Date().getTime() - member.user.createdAt.getTime()) /
+      (1000 * 3600 * 24),
+  );
   if (createdTimeAgo <= 4) {
     const recentUserEmbed = {
       color: 0xed4245,
@@ -95,20 +109,28 @@ export const execute = async (member: GuildMember): Promise<void> => {
     } catch (e) {
       console.error(e);
     }
-  } else if ((createdTimeAgo > 4 && createdTimeAgo <= 60) || member.id === "1123262077876850698") {
+  } else if (
+    (createdTimeAgo > 4 && createdTimeAgo <= 60) ||
+    member.id === "1123262077876850698"
+  ) {
     const unverifiedRoleId = getConfig("roleUnverified");
     if (!unverifiedRoleId) {
       return;
     }
     try {
-      const unverifiedRole = await member.guild.roles.fetch(String(unverifiedRoleId));
+      const unverifiedRole = await member.guild.roles.fetch(
+        String(unverifiedRoleId),
+      );
       if (!unverifiedRole) {
         console.error("Le rôle des non vérifiés n'existe pas.");
         return;
       }
       await member.roles.add(getConfig("roleUnverified") ?? "");
     } catch (error) {
-      console.error("Erreur lors de la récupération du rôle des non vérifiés :", error);
+      console.error(
+        "Erreur lors de la récupération du rôle des non vérifiés :",
+        error,
+      );
       return;
     }
   }
