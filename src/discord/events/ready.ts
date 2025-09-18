@@ -6,8 +6,8 @@ export const once = true;
 
 export const execute = (client: Client): void => {
   if (client.user) {
-    console.log(`Prêt! Connecté en tant que ${client.user.tag}`);
+    console.info(`Prêt! Connecté en tant que ${client.user.tag}`);
   } else {
-    console.log("Prêt! Connecté !");
+    console.info("Prêt! Connecté !");
   }
 };

@@ -16,11 +16,11 @@ fastify.register(RoutesOauth2);
 const startWebServer = async (): Promise<void> => {
   try {
     await fastify.listen({ port: 3000 });
-    console.log(
+    console.info(
       `Server is running on ${process.env.SERVER_URL || "http://localhost:3000"}`,
     );
   } catch (err) {
-    fastify.log.error(err);
+    console.error(err);
     process.exit(1);
   }
 };

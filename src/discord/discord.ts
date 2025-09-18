@@ -1,5 +1,6 @@
 import { loadConfig } from "@/discord/ConfigManager.js";
 import { intents, partials } from "@/discord/intents.js";
+import { initializeDiscordPendingUsersScheduler } from "@/lib/discord/DiscordPendingAuthorizedUsers.js";
 import { initializeGiveawayScheduler } from "@/lib/giveaway/GiveawayScheduler.js";
 import { getDirName } from "@/lib/utils.js";
 import { Client, Collection, REST, Routes } from "discord.js";
@@ -28,7 +29,7 @@ async function loadCommands(): Promise<unknown[]> {
       client.commands.set(command.data.name, command);
       commands.push(command.data.toJSON());
     } else {
-      console.log(
+      console.warn(
         `[WARNING] The command at ${filePath} is missing a required "data" or "execute" property.`,
       );
     }
@@ -39,7 +40,7 @@ async function loadCommands(): Promise<unknown[]> {
 async function loadRest(commands: unknown[]): Promise<void> {
   const rest = new REST({ version: "10" }).setToken(process.env.TOKEN!);
   try {
-    console.log(
+    console.info(
       `Started refreshing ${commands.length} application (/) commands.`,
     );
 
@@ -53,7 +54,7 @@ async function loadRest(commands: unknown[]): Promise<void> {
       },
     )) as unknown[];
 
-    console.log(
+    console.info(
       `Successfully reloaded ${data.length} application (/) commands.`,
     );
   } catch (error) {
@@ -81,12 +82,17 @@ async function loadEvents(): Promise<void> {
   }
 }
 const botStart = async (): Promise<void> => {
-  await loadConfig();
-  const commands = await loadCommands();
-  await loadRest(commands);
-  await loadEvents();
-  await client.login(process.env.TOKEN);
-  await initializeGiveawayScheduler(client);
+  try {
+    await loadConfig();
+    const commands = await loadCommands();
+    await loadRest(commands);
+    await loadEvents();
+    await client.login(process.env.TOKEN);
+    await initializeGiveawayScheduler(client);
+    await initializeDiscordPendingUsersScheduler(client);
+  } catch (error) {
+    console.error("Error starting bot:", error);
+  }
 };
 
 export default botStart;

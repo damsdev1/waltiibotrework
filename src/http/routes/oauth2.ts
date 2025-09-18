@@ -4,6 +4,7 @@ import {
   getDiscordUser,
 } from "@/lib/discord/DiscordAPI.js";
 import { handleDiscordConnectionsTx } from "@/lib/discord/discordConnectionManager.js";
+import { validatePendingUser } from "@/lib/discord/DiscordPendingAuthorizedUsers.js";
 import { prisma } from "@/lib/prisma.js";
 import type { UserWithoutId } from "@/lib/types/db.js";
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
@@ -45,6 +46,7 @@ const routes = async (fastify: FastifyInstance): Promise<void> => {
             discordUser.id,
             discordConnections,
           );
+          await validatePendingUser(discordUser.id);
         });
 
         return reply.sendFile("oauthdone.html");

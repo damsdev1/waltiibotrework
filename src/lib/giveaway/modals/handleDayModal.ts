@@ -1,7 +1,7 @@
 import { t } from "@/lib/locales/i18n.js";
 import type { GiveawayWizard } from "@/lib/types/giveaway.js";
 import { getUserLang } from "@/lib/utils.js";
-import type { ModalSubmitInteraction } from "discord.js";
+import { MessageFlags, type ModalSubmitInteraction } from "discord.js";
 
 export const handleDayModal = async (
   interaction: ModalSubmitInteraction,
@@ -17,7 +17,10 @@ export const handleDayModal = async (
 
   const totalDays = new Date(year, month, 0).getDate();
   if (isNaN(day) || day < 1 || day > totalDays) {
-    await interaction.reply({ content: "Jour invalide!", ephemeral: true });
+    await interaction.reply({
+      content: "Jour invalide!",
+      flags: MessageFlags.Ephemeral,
+    });
     return true;
   }
 
@@ -31,7 +34,7 @@ export const handleDayModal = async (
       content: t("giveawayWizardHandleDatePast", {
         lng: getUserLang(interaction.locale),
       }),
-      ephemeral: true,
+      flags: MessageFlags.Ephemeral,
     });
     return true;
   }

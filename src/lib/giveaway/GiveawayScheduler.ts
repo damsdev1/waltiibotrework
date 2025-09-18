@@ -3,7 +3,7 @@ import type { Giveaway, GiveawayEntry } from "@/../generated/prisma/index.js";
 import { t } from "@/lib/locales/i18n.js";
 import { prisma } from "@/lib/prisma.js";
 import crypto from "crypto";
-import type { Client } from "discord.js";
+import { EmbedBuilder, type Client } from "discord.js";
 
 const GiveawaySchedulerMap = new Map<number, NodeJS.Timeout>();
 let DiscordClient: Client | undefined = undefined;
@@ -51,7 +51,9 @@ export const scheduleGiveaway = (giveaway: {
 }): void => {
   // Clear existing timeout if any
   const existingTimeout = GiveawaySchedulerMap.get(giveaway.id);
-  if (existingTimeout) clearTimeout(existingTimeout);
+  if (existingTimeout) {
+    clearTimeout(existingTimeout);
+  }
 
   const timeDiff = giveaway.endTime.getTime() - Date.now();
 
@@ -96,12 +98,23 @@ export const scheduleGiveaway = (giveaway: {
               );
               return;
             }
+            const giveawayEmbed = new EmbedBuilder()
+              .setTitle(t("giveawayAnnounceTitle"))
+              .setDescription(
+                t("giveawayAnnouncePrize", { prize: giveawayData.prize }),
+              )
+              .addFields({
+                name: t("giveawayAnnounceWinner"),
+                value: `<@${winner}>`,
+              })
+              .setColor("Aqua");
             await message.edit({
               content: t("giveawayEndedWinnerAnnouncement", {
                 winnerId: `<@${winner}>`,
                 prize: giveawayData.prize,
               }),
               components: [],
+              embeds: [giveawayEmbed],
             });
           } catch (error) {
             console.error(

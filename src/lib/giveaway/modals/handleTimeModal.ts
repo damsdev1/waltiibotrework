@@ -1,7 +1,7 @@
 import { t } from "@/lib/locales/i18n.js";
 import type { GiveawayWizard } from "@/lib/types/giveaway.js";
 import { getUserLang } from "@/lib/utils.js";
-import type { ModalSubmitInteraction } from "discord.js";
+import { MessageFlags, type ModalSubmitInteraction } from "discord.js";
 
 export const handleTimeModal = async (
   interaction: ModalSubmitInteraction,
@@ -17,7 +17,7 @@ export const handleTimeModal = async (
   if (isNaN(h) || isNaN(m) || h < 0 || h > 23 || m < 0 || m > 59) {
     await interaction.reply({
       content: "Format de temps invalide HH:MM",
-      ephemeral: true,
+      flags: MessageFlags.Ephemeral,
     });
     return true;
   }
@@ -35,7 +35,7 @@ export const handleTimeModal = async (
       content: t("giveawayWizardHandleDatePast", {
         lng: getUserLang(interaction.locale),
       }),
-      ephemeral: true,
+      flags: MessageFlags.Ephemeral,
     });
     return true;
   }
