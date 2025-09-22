@@ -1,9 +1,4 @@
-import {
-  getDiscordConnections,
-  getDiscordToken,
-  getDiscordUser,
-} from "@/lib/discord/DiscordAPI.js";
-import { handleDiscordConnectionsTx } from "@/lib/discord/discordConnectionManager.js";
+import { getDiscordToken, getDiscordUser } from "@/lib/discord/DiscordAPI.js";
 import { validatePendingUser } from "@/lib/discord/DiscordPendingAuthorizedUsers.js";
 import { prisma } from "@/lib/prisma.js";
 import type { UserWithoutId } from "@/lib/types/db.js";
@@ -24,7 +19,6 @@ const routes = async (fastify: FastifyInstance): Promise<void> => {
           tokenExpiry: new Date(Date.now() + discordTokenRaw.expires_in * 1000),
         };
         const discordUser = await getDiscordUser(discordToken);
-        const discordConnections = await getDiscordConnections(discordToken);
         await prisma.$transaction(async (tx) => {
           await tx.user.upsert({
             where: { id: discordUser.id },
@@ -41,11 +35,6 @@ const routes = async (fastify: FastifyInstance): Promise<void> => {
             },
           });
 
-          await handleDiscordConnectionsTx(
-            tx,
-            discordUser.id,
-            discordConnections,
-          );
           await validatePendingUser(discordUser.id);
         });
 

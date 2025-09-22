@@ -1,14 +1,16 @@
-import { wizards } from "@/lib/Store.js";
 import {
-  generatePageComponents,
-  generateWizardEmbed,
-  getYearOptions,
   isSubscribersRolesConfigured,
-} from "@/lib/giveaway/GiveawayUtils.js";
+  wizardEmbedContent,
+} from "@/discord/modules/giveaway/GiveawayUtils.js";
+import { replyEphemeral } from "@/discord/utils.js";
 import { getAllLocalizedTranslations, t } from "@/lib/locales/i18n.js";
 import { prisma } from "@/lib/prisma.js";
-import type { GiveawayWizardPage } from "@/lib/types/giveaway.js";
-import { getUserLang, replyEphemeral } from "@/lib/utils.js";
+import { wizards } from "@/lib/Store.js";
+import type {
+  GiveawayWizard,
+  GiveawayWizardPage,
+} from "@/lib/types/giveaway.js";
+import { getUserLang } from "@/lib/utils.js";
 import type {
   AutocompleteInteraction,
   ChatInputCommandInteraction,
@@ -20,6 +22,11 @@ import {
   SlashCommandBuilder,
 } from "discord.js";
 
+function getYearOptions(): string[] {
+  const now = new Date();
+  const currentYear = now.getFullYear();
+  return Array.from({ length: 5 }, (_, i) => String(currentYear + i));
+}
 export const data = new SlashCommandBuilder()
   .setName("giveaway")
   .setDescription(t("giveawaySlashCommand"))
@@ -77,11 +84,7 @@ async function handleCreate(
 ): Promise<void> {
   const subCommand = interaction.options.getSubcommand();
   if (subCommand === "sub" && !isSubscribersRolesConfigured()) {
-    return replyEphemeral(
-      interaction,
-      "giveawaySubNotConfiguredAdmin",
-      userLang,
-    );
+    return replyEphemeral(interaction, "giveawaySubNotConfigured", userLang);
   }
   const pages: GiveawayWizardPage[] = [
     {
@@ -121,11 +124,7 @@ async function handleCreate(
   ];
 
   const reply = await interaction.reply({
-    content: t("giveawaySetup", { lng: userLang }),
-    embeds: [generateWizardEmbed({}, userLang)],
-    components: generatePageComponents({ pages, pageIndex: 0 }, userLang).map(
-      (row) => row.toJSON(),
-    ),
+    ...wizardEmbedContent(userLang, { pages, pageIndex: 0 } as GiveawayWizard),
     withResponse: true,
     flags: MessageFlags.Ephemeral,
   });
@@ -168,7 +167,7 @@ async function handleDelete(
       await message.delete();
     }
     await prisma.giveaway.delete({ where: { id: giveaway.id } });
-    await replyEphemeral(interaction, "giveawayDeleted", userLang, {
+    return replyEphemeral(interaction, "giveawayDeleted", userLang, {
       prize: giveaway.prize,
     });
   } catch (error) {
@@ -194,7 +193,7 @@ export const execute = async (
     return handleDelete(interaction, userLang);
   }
 
-  await replyEphemeral(interaction, "unknownSubcommand", userLang);
+  return replyEphemeral(interaction, "unknownSubcommand", userLang);
 };
 
 export const autocomplete = async (
@@ -207,7 +206,7 @@ export const autocomplete = async (
     },
   });
 
-  await interaction.respond(
+  return interaction.respond(
     choices.map((choice) => ({
       name: String(choice.prize),
       value: String(choice.id),

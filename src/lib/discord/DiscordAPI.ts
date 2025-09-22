@@ -115,8 +115,12 @@ export const getDiscordConnections = async (
     );
   }
 
+  const data = Array.isArray(response.data) ? response.data : [{}];
+
   try {
-    return DiscordConnectionsValidator.parse(response.data);
+    return DiscordConnectionsValidator.parse(
+      data.filter((conn) => conn?.type === "twitch"),
+    );
   } catch (error) {
     if (error instanceof z.ZodError) {
       throw new DiscordFetchAPIError("Invalid user data structure");

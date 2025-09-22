@@ -1,5 +1,5 @@
 import { getConfig } from "@/discord/ConfigManager.js";
-import { dateDiff } from "@/discord/utils.js";
+import { formatTimeJoinLeaveMessage } from "@/discord/utils.js";
 import type { GuildMember } from "discord.js";
 import { EmbedBuilder, Events } from "discord.js";
 
@@ -46,7 +46,7 @@ const sendMessageLeave = async (
           },
           {
             name: "Compte créé il y a",
-            value: dateDiff(member.user.createdAt),
+            value: formatTimeJoinLeaveMessage(member.user.createdAt),
             inline: false,
           },
         ],
@@ -76,12 +76,12 @@ const sendMessageLeave = async (
           },
           {
             name: "Compte créé il y a",
-            value: dateDiff(member.user.createdAt),
+            value: formatTimeJoinLeaveMessage(member.user.createdAt),
             inline: false,
           },
           {
             name: "Sur le serveur depuis",
-            value: dateDiff(member.joinedAt ?? new Date()),
+            value: formatTimeJoinLeaveMessage(member.joinedAt ?? new Date()),
             inline: false,
           },
         )

@@ -1,102 +1,88 @@
 import { setConfig } from "@/discord/ConfigManager.js";
+import { replyEphemeral } from "@/discord/utils.js";
 import { getAllLocalizedTranslations, t } from "@/lib/locales/i18n.js";
 import type { TranslationKeys } from "@/lib/types/i18n.js";
 import { getUserLang } from "@/lib/utils.js";
 import type {
   ChatInputCommandInteraction,
-  InteractionResponse,
   SlashCommandRoleOption,
   SlashCommandSubcommandBuilder,
 } from "discord.js";
-import {
-  MessageFlags,
-  PermissionFlagsBits,
-  SlashCommandBuilder,
-} from "discord.js";
+import { PermissionFlagsBits, SlashCommandBuilder } from "discord.js";
 
-// Helper to build role subcommands
-const createRoleSubcommand =
-  (name: string, descriptionKey: TranslationKeys) =>
-  (sub: SlashCommandSubcommandBuilder): SlashCommandSubcommandBuilder =>
-    sub
-      .setName(name)
-      .setDescription(t(descriptionKey))
-      .setDescriptionLocalizations(getAllLocalizedTranslations(descriptionKey))
-      .addRoleOption((opt: SlashCommandRoleOption) =>
-        opt
-          .setName("role")
-          .setDescription(t("roleManagerSlashCommandRoleOption"))
-          .setDescriptionLocalizations(
-            getAllLocalizedTranslations("roleManagerSlashCommandRoleOption"),
-          )
-          .setRequired(true),
-      );
-
-// Subcommand → config key and success translation key
+/* ---------------------- Role Config Mapping ---------------------- */
 const roleConfigMap: Record<
   string,
-  { configKey: string; successKey: TranslationKeys }
+  { configKey: string; successKey: TranslationKeys; descKey: TranslationKeys }
 > = {
-  notif: { configKey: "roleNotif", successKey: "roleManagerNotifRoleDefined" },
+  notif: {
+    configKey: "roleNotif",
+    successKey: "roleManagerNotifRoleDefined",
+    descKey: "roleManagerSlashCommandNotif",
+  },
   unverified: {
     configKey: "roleUnverified",
     successKey: "roleManagerUnverifiedRoleDefined",
+    descKey: "roleManagerSlashCommandUnverified",
   },
   subscriber: {
     configKey: "subscriberRoleId",
     successKey: "roleManagerSubscriberRoleDefined",
+    descKey: "roleManagerSlashCommandSubscriber",
   },
   t1sub: {
     configKey: "T1SubRoleId",
     successKey: "roleManagerT1SubRoleDefined",
+    descKey: "roleManagerSlashCommandT1Sub",
   },
   t2sub: {
     configKey: "T2SubRoleId",
     successKey: "roleManagerT2SubRoleDefined",
+    descKey: "roleManagerSlashCommandT2Sub",
   },
   t3sub: {
     configKey: "T3SubRoleId",
     successKey: "roleManagerT3SubRoleDefined",
+    descKey: "roleManagerSlashCommandT3Sub",
   },
 };
 
-export const data = new SlashCommandBuilder()
-  .setName("roles")
-  .setDescription(t("roleManagerSlashCommand"))
-  .addSubcommand(createRoleSubcommand("notif", "roleManagerSlashCommandNotif"))
-  .addSubcommand(
-    createRoleSubcommand("unverified", "roleManagerSlashCommandUnverified"),
-  )
-  .addSubcommand(
-    createRoleSubcommand("subscriber", "roleManagerSlashCommandSubscriber"),
-  )
-  .addSubcommand(createRoleSubcommand("t1sub", "roleManagerSlashCommandT1Sub"))
-  .addSubcommand(createRoleSubcommand("t2sub", "roleManagerSlashCommandT2Sub"))
-  .addSubcommand(createRoleSubcommand("t3sub", "roleManagerSlashCommandT3Sub"))
-  .setDefaultMemberPermissions(PermissionFlagsBits.Administrator);
+/* ---------------------- Build SlashCommandBuilder ---------------------- */
+export const data = ((): SlashCommandBuilder => {
+  const builder = new SlashCommandBuilder()
+    .setName("roles")
+    .setDescription(t("roleManagerSlashCommand"))
+    .setDefaultMemberPermissions(PermissionFlagsBits.Administrator);
 
-const replyWithRole = async (
-  interaction: ChatInputCommandInteraction,
-  key: TranslationKeys,
-  roleId: string,
-  lng: string,
-): Promise<InteractionResponse<boolean>> =>
-  interaction.reply({
-    content: t(key, { role: `<@&${roleId}>`, lng }),
-    flags: MessageFlags.Ephemeral,
-  });
+  for (const [name, { descKey }] of Object.entries(roleConfigMap)) {
+    builder.addSubcommand((sub: SlashCommandSubcommandBuilder) =>
+      sub
+        .setName(name)
+        .setDescription(t(descKey))
+        .setDescriptionLocalizations(getAllLocalizedTranslations(descKey))
+        .addRoleOption((opt: SlashCommandRoleOption) =>
+          opt
+            .setName("role")
+            .setDescription(t("roleManagerSlashCommandRoleOption"))
+            .setDescriptionLocalizations(
+              getAllLocalizedTranslations("roleManagerSlashCommandRoleOption"),
+            )
+            .setRequired(true),
+        ),
+    );
+  }
 
+  return builder;
+})();
+
+/* ---------------------- Execute Handler ---------------------- */
 export async function execute(
   interaction: ChatInputCommandInteraction,
 ): Promise<void> {
   const lng = getUserLang(interaction.locale);
 
   if (!interaction.guild) {
-    await interaction.reply({
-      content: t("commandOnlyInGuild", { lng }),
-      flags: MessageFlags.Ephemeral,
-    });
-    return;
+    return replyEphemeral(interaction, "commandOnlyInGuild", lng);
   }
 
   const sub = interaction.options.getSubcommand();
@@ -104,13 +90,11 @@ export async function execute(
 
   const mapping = roleConfigMap[sub];
   if (!mapping) {
-    await interaction.reply({
-      content: t("unknownSubcommand", { lng }),
-      flags: MessageFlags.Ephemeral,
-    });
-    return;
+    return replyEphemeral(interaction, "unknownSubcommand", lng);
   }
 
   await setConfig(mapping.configKey, role.id);
-  await replyWithRole(interaction, mapping.successKey, role.id, lng);
+  return replyEphemeral(interaction, mapping.successKey, lng, {
+    roleID: `<@&${role.id}>`,
+  });
 }

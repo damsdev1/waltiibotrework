@@ -1,7 +1,7 @@
 import { loadConfig } from "@/discord/ConfigManager.js";
 import { intents, partials } from "@/discord/intents.js";
+import { initializeGiveawayScheduler } from "@/discord/modules/giveaway/GiveawayScheduler.js";
 import { initializeDiscordPendingUsersScheduler } from "@/lib/discord/DiscordPendingAuthorizedUsers.js";
-import { initializeGiveawayScheduler } from "@/lib/giveaway/GiveawayScheduler.js";
 import { getDirName } from "@/lib/utils.js";
 import { Client, Collection, REST, Routes } from "discord.js";
 import * as fs from "fs";

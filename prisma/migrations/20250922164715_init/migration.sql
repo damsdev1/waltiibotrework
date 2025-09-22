@@ -15,18 +15,19 @@ CREATE TABLE "User" (
 -- CreateTable
 CREATE TABLE "Connections" (
     "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-    "userId" TEXT NOT NULL,
     "platform" TEXT NOT NULL,
     "platformId" TEXT NOT NULL,
-    CONSTRAINT "Connections_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+    "userId" TEXT NOT NULL,
+    "giveawayEntryId" INTEGER NOT NULL,
+    CONSTRAINT "Connections_giveawayEntryId_fkey" FOREIGN KEY ("giveawayEntryId") REFERENCES "GiveawayEntry" ("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
 
 -- CreateTable
 CREATE TABLE "Giveaway" (
     "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
     "interactionId" TEXT NOT NULL,
-    "channelId" TEXT,
-    "messageId" TEXT,
+    "channelId" TEXT NOT NULL,
+    "messageId" TEXT NOT NULL,
     "prize" TEXT NOT NULL,
     "endTime" DATETIME NOT NULL,
     "ended" BOOLEAN NOT NULL DEFAULT false,
@@ -53,7 +54,7 @@ CREATE UNIQUE INDEX "Config_key_key" ON "Config"("key");
 CREATE UNIQUE INDEX "User_id_key" ON "User"("id");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "Connections_platform_platformId_key" ON "Connections"("platform", "platformId");
+CREATE UNIQUE INDEX "Connections_platform_platformId_userId_giveawayEntryId_key" ON "Connections"("platform", "platformId", "userId", "giveawayEntryId");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "Giveaway_interactionId_key" ON "Giveaway"("interactionId");

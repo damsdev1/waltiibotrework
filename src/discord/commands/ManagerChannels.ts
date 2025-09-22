@@ -1,4 +1,5 @@
 import { setConfig } from "@/discord/ConfigManager.js";
+import { replyEphemeral } from "@/discord/utils.js";
 import { getAllLocalizedTranslations, t } from "@/lib/locales/i18n.js";
 import type { TranslationKeys } from "@/lib/types/i18n.js";
 import { getUserLang } from "@/lib/utils.js";
@@ -15,46 +16,49 @@ import {
   SlashCommandBuilder,
 } from "discord.js";
 
-/* ------------------------- Subcommand Factory -------------------------- */
-const createChannelSubcommand =
-  (name: string, description: TranslationKeys) =>
-  (subcommand: SlashCommandSubcommandBuilder): SlashCommandSubcommandBuilder =>
-    subcommand
-      .setName(name)
-      .setDescription(description)
-      .setDescriptionLocalizations(getAllLocalizedTranslations(description))
-      .addChannelOption((option: SlashCommandChannelOption) =>
-        option
-          .setName("salon")
-          .setDescription(t("managerChannelsSlashCommandChannelOption"))
-          .setDescriptionLocalizations(
-            getAllLocalizedTranslations(
-              "managerChannelsSlashCommandChannelOption",
-            ),
-          )
-          .addChannelTypes(ChannelType.GuildText)
-          .setRequired(true),
-      );
+const configMap: Record<
+  string,
+  { key: string; msgKey: TranslationKeys; descKey: TranslationKeys }
+> = {
+  annonce: {
+    key: "announceChannel",
+    msgKey: "managerChannelsAnnouncementChannelDefined",
+    descKey: "managerChannelsSlashCommandAnnouncement",
+  },
+  logs_join: {
+    key: "logsJoinChannel",
+    msgKey: "managerChannelsLogsJoinChannelDefined",
+    descKey: "managerChannelsSlashCommandLogsJoin",
+  },
+  logs_leave: {
+    key: "logsLeaveChannel",
+    msgKey: "managerChannelsLogsLeaveChannelDefined",
+    descKey: "managerChannelsSlashCommandLogsLeave",
+  },
+  logs_verification: {
+    key: "logsVerificationChannel",
+    msgKey: "managerChannelsLogsVerificationChannelDefined",
+    descKey: "managerChannelsSlashCommandLogsVerification",
+  },
+};
 
-/* ------------------------- Channel Validation -------------------------- */
 async function validateChannel(
   channel: Channel,
   interaction: ChatInputCommandInteraction,
 ): Promise<string | null> {
   const lng = getUserLang(interaction.locale);
-
   try {
     const fetched = await interaction.guild?.channels.fetch(channel.id);
     if (!fetched || fetched.type !== ChannelType.GuildText) {
       return t("managerChannelsInvalidTextChannel", { lng });
     }
-    if (!interaction.guild || !interaction.guild.members.me) {
+    if (!interaction.guild?.members.me) {
       return t("managerChannelsNoGuildInfo", { lng });
     }
-    const hasSendPerm = fetched
+    const canSend = fetched
       .permissionsFor(interaction.guild.members.me)
       ?.has(PermissionFlagsBits.SendMessages);
-    if (!hasSendPerm) {
+    if (!canSend) {
       return t("managerChannelsNoSendMessagesPermission", { lng });
     }
     return null;
@@ -63,7 +67,6 @@ async function validateChannel(
   }
 }
 
-/* ----------------------- Execute Channel Subcommand --------------------- */
 async function executeChannelConfig(
   channel: Channel,
   key: string,
@@ -82,91 +85,65 @@ async function executeChannelConfig(
   });
 }
 
-/* ---------------------------- Slash Builder ---------------------------- */
-export const data = new SlashCommandBuilder()
-  .setName("channels")
-  .setDescription(t("managerChannelsSlashCommand"))
-  .addSubcommand(
-    createChannelSubcommand(
-      "annonce",
-      "managerChannelsSlashCommandAnnouncement",
-    ),
-  )
-  .addSubcommand(
-    createChannelSubcommand("logs_join", "managerChannelsSlashCommandLogsJoin"),
-  )
-  .addSubcommand(
-    createChannelSubcommand(
-      "logs_leave",
-      "managerChannelsSlashCommandLogsLeave",
-    ),
-  )
-  .addSubcommand(
-    createChannelSubcommand(
-      "logs_verification",
-      "managerChannelsSlashCommandLogsVerification",
-    ),
-  )
-  .setDefaultMemberPermissions(PermissionFlagsBits.Administrator);
+export const data = ((): SlashCommandBuilder => {
+  const builder = new SlashCommandBuilder()
+    .setName("channels")
+    .setDescription(t("managerChannelsSlashCommand"))
+    .setDefaultMemberPermissions(PermissionFlagsBits.Administrator);
 
-/* ------------------------------- Execute ------------------------------- */
+  // Dynamically add subcommands based on configMap
+  for (const [name, { descKey }] of Object.entries(configMap)) {
+    builder.addSubcommand((sub: SlashCommandSubcommandBuilder) =>
+      sub
+        .setName(name)
+        .setDescription(t(descKey))
+        .setDescriptionLocalizations(getAllLocalizedTranslations(descKey))
+        .addChannelOption((option: SlashCommandChannelOption) =>
+          option
+            .setName("salon")
+            .setDescription(t("managerChannelsSlashCommandChannelOption"))
+            .setDescriptionLocalizations(
+              getAllLocalizedTranslations(
+                "managerChannelsSlashCommandChannelOption",
+              ),
+            )
+            .addChannelTypes(ChannelType.GuildText)
+            .setRequired(true),
+        ),
+    );
+  }
+
+  return builder;
+})();
+
 export async function execute(
   interaction: ChatInputCommandInteraction,
 ): Promise<void> {
   const lng = getUserLang(interaction.locale);
 
   if (!interaction.guild) {
-    await interaction.reply({
-      content: t("commandOnlyInGuild", { lng }),
-      flags: MessageFlags.Ephemeral,
-    });
-    return;
+    return replyEphemeral(interaction, "commandOnlyInGuild", lng);
+  }
+
+  const channel = interaction.options.getChannel("salon", true);
+  if (channel.type !== ChannelType.GuildText) {
+    return replyEphemeral(
+      interaction,
+      "managerChannelsInvalidTextChannel",
+      lng,
+    );
   }
 
   const sub = interaction.options.getSubcommand();
-  const channel = interaction.options.getChannel("salon", true);
-
-  if (channel.type !== ChannelType.GuildText) {
-    await interaction.reply({
-      content: t("managerChannelsInvalidTextChannel", { lng }),
-      flags: MessageFlags.Ephemeral,
-    });
-    return;
-  }
-
-  // Map of subcommands to config keys and messages
-  const configMap: Record<string, { key: string; msgKey: TranslationKeys }> = {
-    annonce: {
-      key: "announceChannel",
-      msgKey: "managerChannelsAnnouncementChannelDefined",
-    },
-    logs_join: {
-      key: "logsJoinChannel",
-      msgKey: "managerChannelsLogsJoinChannelDefined",
-    },
-    logs_leave: {
-      key: "logsLeaveChannel",
-      msgKey: "managerChannelsLogsLeaveChannelDefined",
-    },
-    logs_verification: {
-      key: "logsVerificationChannel",
-      msgKey: "managerChannelsLogsVerificationChannelDefined",
-    },
-  };
-
   const config = configMap[sub];
   if (!config) {
-    await interaction.reply({
-      content: t("unknownSubcommand", { lng }),
-      flags: MessageFlags.Ephemeral,
-    });
-    return;
+    return replyEphemeral(interaction, "unknownSubcommand", lng);
   }
 
   await executeChannelConfig(
     channel as Channel,
     config.key,
     interaction,
-    t(config.msgKey, { lng, channel: `<#${channel.id}>` }),
+    t(config.msgKey, { lng, channelID: `<#${channel.id}>` }),
   );
 }

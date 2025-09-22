@@ -21,24 +21,23 @@ model User {
   accessToken  String
   refreshToken String
   tokenExpiry  DateTime
-  Connections  Connections[]
 }
 
 model Connections {
   id         Int    @id @default(autoincrement())
-  userId     String
   platform   String
   platformId String
-  user       User   @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-
-  @@unique([platform, platformId], name: "PlatformPlatformId") // prevents same connection being assigned to multiple users
+  userId     String
+  giveawayEntryId Int
+  giveawayEntry GiveawayEntry @relation(fields: [giveawayEntryId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  @@unique([platform, platformId, giveawayEntryId], name: "PlatformUser") // prevents same user
 }
 
 model Giveaway {
   id            Int             @id @default(autoincrement())
   interactionId String          @unique
-  channelId     String?
-  messageId     String?         @unique
+  channelId     String
+  messageId     String        @unique
   prize         String
   endTime       DateTime
   ended         Boolean         @default(false)
@@ -56,6 +55,6 @@ model GiveawayEntry {
   chances    Int      @default(1)
   joinedAt   DateTime @default(now())
   giveaway   Giveaway @relation(fields: [giveawayId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-
+  connections Connections[]
   @@unique([giveawayId, userId], name: "GiveawayUser") // prevents same user entering giveaway multiple times
 }

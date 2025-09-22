@@ -7,16 +7,21 @@ import {
   TextInputStyle,
 } from "discord.js";
 
+export const isOpenInteractionModal = (
+  interaction: ButtonInteraction,
+  page: GiveawayWizardPageModal,
+): boolean => {
+  return (
+    !!page && page.type === "modal" && interaction.customId === page.modalId
+  );
+};
+
 export const openInteractionModal = async (
   interaction: ButtonInteraction,
   page: GiveawayWizardPageModal,
-): Promise<boolean> => {
-  if (!page || page.type !== "modal" || interaction.customId !== page.modalId) {
-    return false;
-  }
-
+): Promise<void> => {
   const modal = new ModalBuilder()
-    .setCustomId(page.modalId)
+    .setCustomId(page.modalId!)
     .setTitle(page.label)
     .addComponents(
       new ActionRowBuilder<TextInputBuilder>().addComponents(
@@ -28,5 +33,4 @@ export const openInteractionModal = async (
       ),
     );
   await interaction.showModal(modal);
-  return true;
 };

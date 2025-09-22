@@ -1,4 +1,4 @@
-import { addGiveaway } from "@/lib/giveaway/GiveawayScheduler.js";
+import { addGiveaway } from "@/discord/modules/giveaway/GiveawayScheduler.js";
 import { t } from "@/lib/locales/i18n.js";
 import { prisma } from "@/lib/prisma.js";
 import { wizards } from "@/lib/Store.js";
@@ -32,24 +32,36 @@ const validateDateTime = (
   );
   return date > new Date() ? date : null;
 };
+
+export const isWizardNavigationButton = (
+  interaction: ButtonInteraction,
+  wizard: GiveawayWizard,
+): boolean => {
+  return (
+    !!wizard &&
+    (interaction.customId === "back" ||
+      interaction.customId === "next" ||
+      interaction.customId === "cancel" ||
+      interaction.customId === "save")
+  );
+  // TODO: use centralized array?
+};
+
 export const handleWizardNavigationButtons = async (
   interaction: ButtonInteraction,
   wizard: GiveawayWizard,
-): Promise<boolean> => {
-  if (!wizard) {
-    return false;
-  }
+): Promise<void> => {
   const userLang = getUserLang(interaction.locale);
   switch (interaction.customId) {
     case "back":
       wizard.pageIndex = Math.max(0, wizard.pageIndex - 1);
-      break;
+      return;
     case "next":
       wizard.pageIndex = Math.min(
         wizard.pages.length - 1,
         wizard.pageIndex + 1,
       );
-      break;
+      return;
     case "cancel":
       await interaction.update({
         content: t("giveawayWizardCancelled", { lng: userLang }),
@@ -57,7 +69,7 @@ export const handleWizardNavigationButtons = async (
         components: [],
       });
       wizards.delete(interaction.message.id);
-      return true;
+      return;
     case "save": {
       if (!GiveawayWizardDataValidator.safeParse(wizard.data).success) {
         await interaction.update({
@@ -65,7 +77,7 @@ export const handleWizardNavigationButtons = async (
           embeds: [],
           components: [],
         });
-        return true;
+        return;
       }
       const { prize, year, month, day, time } = wizard.data;
       const endTime = validateDateTime(year, month, day, time);
@@ -75,7 +87,7 @@ export const handleWizardNavigationButtons = async (
           embeds: [],
           components: [],
         });
-        return true;
+        return;
       }
 
       const channel = await interaction.guild?.channels.fetch(
@@ -87,7 +99,7 @@ export const handleWizardNavigationButtons = async (
           embeds: [],
           components: [],
         });
-        return true;
+        return;
       }
 
       try {
@@ -138,7 +150,6 @@ export const handleWizardNavigationButtons = async (
           embeds: [],
           components: [],
         });
-        return true;
       } catch (error) {
         console.error("Error creating giveaway:", error);
         await interaction.update({
@@ -146,12 +157,8 @@ export const handleWizardNavigationButtons = async (
           embeds: [],
           components: [],
         });
-        return true;
       }
+      return;
     }
-    default:
-      return false;
   }
-
-  return false;
 };

@@ -1,6 +1,7 @@
+import { replyEphemeral } from "@/discord/utils.js";
 import { getAllLocalizedTranslations, t } from "@/lib/locales/i18n.js";
 import type { TranslationKeys } from "@/lib/types/i18n.js";
-import { getUserLang, replyEphemeral } from "@/lib/utils.js";
+import { getUserLang } from "@/lib/utils.js";
 import type { ChatInputCommandInteraction, GuildMember } from "discord.js";
 import {
   InteractionContextType,
@@ -61,19 +62,18 @@ async function tryBan(
 
     const banErrorKey = canBan(target, executer);
     if (banErrorKey) {
-      await replyEphemeral(
+      return replyEphemeral(
         interaction,
         banErrorKey as TranslationKeys,
         getUserLang(interaction.locale),
       );
-      return;
     }
 
     await target.ban({
       reason: reason,
       deleteMessageSeconds: BAN_DELETE_MESSAGE_SECONDS,
     });
-    await replyEphemeral(
+    return replyEphemeral(
       interaction,
       "successBan",
       getUserLang(interaction.locale),
@@ -85,14 +85,14 @@ async function tryBan(
         reason: reason,
         deleteMessageSeconds: BAN_DELETE_MESSAGE_SECONDS,
       });
-      await replyEphemeral(
+      return replyEphemeral(
         interaction,
         "successBan",
         getUserLang(interaction.locale),
         { userID, reason },
       );
     } catch {
-      await replyEphemeral(
+      return replyEphemeral(
         interaction,
         "errorBan",
         getUserLang(interaction.locale),
@@ -106,12 +106,11 @@ export async function execute(
 ): Promise<void> {
   const executerLang = getUserLang(interaction.locale);
   if (!interaction.guild || !interaction.member) {
-    await replyEphemeral(interaction, "commandOnlyInGuild", executerLang);
-    return;
+    return replyEphemeral(interaction, "commandOnlyInGuild", executerLang);
   }
   const userID = interaction.options.getString("userid", true);
   const reason =
     interaction.options.getString("raison") || "Aucune raison fournie";
 
-  await tryBan(interaction, userID, reason);
+  return tryBan(interaction, userID, reason);
 }

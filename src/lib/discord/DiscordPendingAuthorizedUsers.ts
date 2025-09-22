@@ -1,6 +1,14 @@
-import { giveawayAdd } from "@/lib/giveaway/GiveawayAdd.js";
+import { giveawayAdd } from "@/discord/modules/giveaway/GiveawayAdd.js";
+import { t } from "@/lib/locales/i18n.js";
 import { prisma } from "@/lib/prisma.js";
-import { type ButtonInteraction, type Client } from "discord.js";
+import type { InteractionEditReplyOptions } from "discord.js";
+import {
+  ActionRowBuilder,
+  ButtonBuilder,
+  ButtonStyle,
+  type ButtonInteraction,
+  type Client,
+} from "discord.js";
 
 type DiscordPendingUser = {
   userId: string;
@@ -13,6 +21,28 @@ const DiscordPendingUsersSchedulerMap = new Map<
   NodeJS.Timeout
 >();
 let DiscordClient: Client | undefined = undefined;
+
+export const AuthorizeMessageComponent = (
+  userLang: string | undefined,
+): InteractionEditReplyOptions => {
+  const authorizeButton = new ButtonBuilder()
+    .setLabel("Authorize")
+    .setStyle(ButtonStyle.Link)
+    .setURL(
+      `https://discord.com/oauth2/authorize?client_id=${process.env.CLIENT_ID}&response_type=code&redirect_uri=${encodeURIComponent(
+        process.env.REDIRECT_URI || "http://localhost:3000/oauth2",
+      )}&scope=identify+connections`,
+    );
+  const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
+    authorizeButton,
+  );
+  return {
+    content: t("giveawayOnlyForSubNeedAuthorizeDiscord", { lng: userLang }),
+    components: [row],
+    // flags: MessageFlags.Ephemeral,
+    // withResponse: true,
+  };
+};
 
 export const initializeDiscordPendingUsersScheduler = async (
   client: Client,
@@ -77,16 +107,20 @@ export const validatePendingUser = async (userId: string): Promise<void> => {
       console.error(`Giveaway not found for ID: ${user.giveawayId}`);
       return;
     }
-    if (!user.interaction) {
-      console.error("Pending user missing interaction");
+    const response = await giveawayAdd(
+      giveaway,
+      user.userId,
+      user.interaction,
+      DiscordClient,
+    );
+    if (response.type === "reply") {
+      await user.interaction.editReply({
+        content: t(response.messageKey),
+        components: [],
+      });
       return;
     }
-    await giveawayAdd(giveaway, user.userId, null, DiscordClient);
-
-    await user.interaction.editReply({
-      content: "You have been successfully entered into the giveaway!",
-      components: [],
-    });
+    return;
   } catch (error) {
     console.error("Error validating pending user:", error);
   }

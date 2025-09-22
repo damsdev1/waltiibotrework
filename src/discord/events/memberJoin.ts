@@ -1,5 +1,5 @@
 import { getConfig } from "@/discord/ConfigManager.js";
-import { dateDiff } from "@/discord/utils.js";
+import { formatTimeJoinLeaveMessage } from "@/discord/utils.js";
 import type { GuildMember } from "discord.js";
 import { Events } from "discord.js";
 
@@ -31,7 +31,7 @@ const sendMessageJoin = async (member: GuildMember): Promise<void> => {
         },
         {
           name: "Compte créé il y a",
-          value: dateDiff(member.user.createdAt),
+          value: formatTimeJoinLeaveMessage(member.user.createdAt),
           inline: false,
         },
       ],
