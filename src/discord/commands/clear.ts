@@ -1,9 +1,8 @@
 import { getAllLocalizedTranslations, t } from "@/lib/locales/i18n.js";
-import { getUserLang } from "@/lib/utils.js";
+import { getUserLang, replyEphemeral } from "@/lib/utils.js";
 import type { ChatInputCommandInteraction } from "discord.js";
 import {
   InteractionContextType,
-  MessageFlags,
   PermissionFlagsBits,
   SlashCommandBuilder,
 } from "discord.js";
@@ -32,20 +31,17 @@ export const data = new SlashCommandBuilder()
 export const execute = async (
   interaction: ChatInputCommandInteraction,
 ): Promise<void> => {
-  const userLang = getUserLang(interaction.locale);
+  const lng = getUserLang(interaction.locale);
   if (!interaction.guild) {
-    await interaction.reply({
-      content: t("commandOnlyInGuild", { lng: userLang }),
-      flags: MessageFlags.Ephemeral,
-    });
+    await replyEphemeral(interaction, "commandOnlyInGuild", lng);
     return;
   }
 
   const messagesNumber = interaction.options.getInteger("nombre", true);
   if (messagesNumber < 1 || messagesNumber > 100) {
-    await interaction.reply({
-      content: t("clearNumberRange", { min: 1, max: 100, lng: userLang }),
-      flags: MessageFlags.Ephemeral,
+    await replyEphemeral(interaction, "clearNumberRange", lng, {
+      min: 1,
+      max: 100,
     });
     return;
   }
@@ -55,17 +51,10 @@ export const execute = async (
     "bulkDelete" in interaction.channel
   ) {
     await interaction.channel.bulkDelete(messagesNumber, true);
-    await interaction.reply({
-      content: t("clearDeletedMessages", {
-        count: messagesNumber,
-        lng: userLang,
-      }),
-      flags: MessageFlags.Ephemeral,
+    await replyEphemeral(interaction, "clearDeletedMessages", lng, {
+      count: messagesNumber,
     });
   } else {
-    await interaction.reply({
-      content: t("clearError", { lng: userLang }),
-      flags: MessageFlags.Ephemeral,
-    });
+    await replyEphemeral(interaction, "clearError", lng);
   }
 };

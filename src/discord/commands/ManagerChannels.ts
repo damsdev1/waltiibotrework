@@ -15,14 +15,10 @@ import {
   SlashCommandBuilder,
 } from "discord.js";
 
-// Helper to create a channel-setting subcommand
-const createChannelSubcommand = (
-  name: string,
-  description: TranslationKeys,
-) => {
-  return (
-    subcommand: SlashCommandSubcommandBuilder,
-  ): SlashCommandSubcommandBuilder =>
+/* ------------------------- Subcommand Factory -------------------------- */
+const createChannelSubcommand =
+  (name: string, description: TranslationKeys) =>
+  (subcommand: SlashCommandSubcommandBuilder): SlashCommandSubcommandBuilder =>
     subcommand
       .setName(name)
       .setDescription(description)
@@ -36,58 +32,57 @@ const createChannelSubcommand = (
               "managerChannelsSlashCommandChannelOption",
             ),
           )
-
           .addChannelTypes(ChannelType.GuildText)
           .setRequired(true),
       );
-};
 
-const channelValid = async (
+/* ------------------------- Channel Validation -------------------------- */
+async function validateChannel(
   channel: Channel,
   interaction: ChatInputCommandInteraction,
-): Promise<string | null> => {
-  const userLang = getUserLang(interaction.locale);
+): Promise<string | null> {
+  const lng = getUserLang(interaction.locale);
+
   try {
-    const channelValidated = await interaction.guild?.channels.fetch(
-      channel.id,
-    );
-    if (!channelValidated || channelValidated.type !== ChannelType.GuildText) {
-      return t("managerChannelsInvalidTextChannel", { lng: userLang });
+    const fetched = await interaction.guild?.channels.fetch(channel.id);
+    if (!fetched || fetched.type !== ChannelType.GuildText) {
+      return t("managerChannelsInvalidTextChannel", { lng });
     }
     if (!interaction.guild || !interaction.guild.members.me) {
-      return t("managerChannelsNoGuildInfo", { lng: userLang });
+      return t("managerChannelsNoGuildInfo", { lng });
     }
-    if (
-      !channelValidated
-        .permissionsFor(interaction.guild?.members.me)
-        ?.has(PermissionFlagsBits.SendMessages)
-    ) {
-      return t("managerChannelsNoSendMessagesPermission", { lng: userLang });
+    const hasSendPerm = fetched
+      .permissionsFor(interaction.guild.members.me)
+      ?.has(PermissionFlagsBits.SendMessages);
+    if (!hasSendPerm) {
+      return t("managerChannelsNoSendMessagesPermission", { lng });
     }
     return null;
   } catch {
-    return t("invalidChannelOrPermissions", { lng: userLang });
+    return t("invalidChannelOrPermissions", { lng });
   }
-};
+}
 
-const executeSubCommandChannel = async (
+/* ----------------------- Execute Channel Subcommand --------------------- */
+async function executeChannelConfig(
   channel: Channel,
-  channelKey: string,
+  key: string,
   interaction: ChatInputCommandInteraction,
   successMessage: string,
-): Promise<void> => {
-  const error = await channelValid(channel, interaction);
+): Promise<void> {
+  const error = await validateChannel(channel, interaction);
   if (error) {
     await interaction.reply({ content: error, flags: MessageFlags.Ephemeral });
     return;
   }
-  await setConfig(channelKey, channel.id);
+  await setConfig(key, channel.id);
   await interaction.reply({
     content: successMessage,
     flags: MessageFlags.Ephemeral,
   });
-};
+}
 
+/* ---------------------------- Slash Builder ---------------------------- */
 export const data = new SlashCommandBuilder()
   .setName("channels")
   .setDescription(t("managerChannelsSlashCommand"))
@@ -114,78 +109,64 @@ export const data = new SlashCommandBuilder()
   )
   .setDefaultMemberPermissions(PermissionFlagsBits.Administrator);
 
+/* ------------------------------- Execute ------------------------------- */
 export async function execute(
   interaction: ChatInputCommandInteraction,
 ): Promise<void> {
-  const userLang = getUserLang(interaction.locale);
+  const lng = getUserLang(interaction.locale);
+
   if (!interaction.guild) {
     await interaction.reply({
-      content: t("commandOnlyInGuild", { lng: userLang }),
+      content: t("commandOnlyInGuild", { lng }),
       flags: MessageFlags.Ephemeral,
     });
     return;
   }
 
-  const subcommand = interaction.options.getSubcommand();
+  const sub = interaction.options.getSubcommand();
   const channel = interaction.options.getChannel("salon", true);
+
   if (channel.type !== ChannelType.GuildText) {
     await interaction.reply({
-      content: t("managerChannelsInvalidTextChannel", { lng: userLang }),
+      content: t("managerChannelsInvalidTextChannel", { lng }),
       flags: MessageFlags.Ephemeral,
     });
     return;
   }
 
-  switch (subcommand) {
-    case "annonce":
-      await executeSubCommandChannel(
-        channel as Channel,
-        "announceChannel",
-        interaction,
-        t("managerChannelsAnnouncementChannelDefined", {
-          lng: userLang,
-          channel: `<#${channel.id}>`,
-        }),
-      );
-      break;
-    case "logs_join":
-      await executeSubCommandChannel(
-        channel as Channel,
-        "logsJoinChannel",
-        interaction,
-        t("managerChannelsLogsJoinChannelDefined", {
-          lng: userLang,
-          channel: `<#${channel.id}>`,
-        }),
-      );
-      break;
-    case "logs_leave":
-      await executeSubCommandChannel(
-        channel as Channel,
-        "logsLeaveChannel",
-        interaction,
-        t("managerChannelsLogsLeaveChannelDefined", {
-          lng: userLang,
-          channel: `<#${channel.id}>`,
-        }),
-      );
-      break;
-    case "logs_verification":
-      await executeSubCommandChannel(
-        channel as Channel,
-        "logsVerificationChannel",
-        interaction,
-        t("managerChannelsLogsVerificationChannelDefined", {
-          lng: userLang,
-          channel: `<#${channel.id}>`,
-        }),
-      );
-      break;
-    default:
-      await interaction.reply({
-        content: t("unknownSubcommand", { lng: userLang }),
-        flags: MessageFlags.Ephemeral,
-      });
-      break;
+  // Map of subcommands to config keys and messages
+  const configMap: Record<string, { key: string; msgKey: TranslationKeys }> = {
+    annonce: {
+      key: "announceChannel",
+      msgKey: "managerChannelsAnnouncementChannelDefined",
+    },
+    logs_join: {
+      key: "logsJoinChannel",
+      msgKey: "managerChannelsLogsJoinChannelDefined",
+    },
+    logs_leave: {
+      key: "logsLeaveChannel",
+      msgKey: "managerChannelsLogsLeaveChannelDefined",
+    },
+    logs_verification: {
+      key: "logsVerificationChannel",
+      msgKey: "managerChannelsLogsVerificationChannelDefined",
+    },
+  };
+
+  const config = configMap[sub];
+  if (!config) {
+    await interaction.reply({
+      content: t("unknownSubcommand", { lng }),
+      flags: MessageFlags.Ephemeral,
+    });
+    return;
   }
+
+  await executeChannelConfig(
+    channel as Channel,
+    config.key,
+    interaction,
+    t(config.msgKey, { lng, channel: `<#${channel.id}>` }),
+  );
 }

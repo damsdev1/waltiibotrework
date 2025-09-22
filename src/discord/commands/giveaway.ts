@@ -8,7 +8,7 @@ import {
 import { getAllLocalizedTranslations, t } from "@/lib/locales/i18n.js";
 import { prisma } from "@/lib/prisma.js";
 import type { GiveawayWizardPage } from "@/lib/types/giveaway.js";
-import { getUserLang } from "@/lib/utils.js";
+import { getUserLang, replyEphemeral } from "@/lib/utils.js";
 import type {
   AutocompleteInteraction,
   ChatInputCommandInteraction,
@@ -71,136 +71,132 @@ export const data = new SlashCommandBuilder()
   .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
   .setContexts(InteractionContextType.Guild);
 
+async function handleCreate(
+  interaction: ChatInputCommandInteraction,
+  userLang: string,
+): Promise<void> {
+  const subCommand = interaction.options.getSubcommand();
+  if (subCommand === "sub" && !isSubscribersRolesConfigured()) {
+    return replyEphemeral(
+      interaction,
+      "giveawaySubNotConfiguredAdmin",
+      userLang,
+    );
+  }
+  const pages: GiveawayWizardPage[] = [
+    {
+      type: "modal",
+      key: "prize",
+      label: t("giveawayEnterPrize", { lng: userLang }),
+      modalId: "modal_prize",
+      placeholder: t("giveawayEnterPrize", { lng: userLang }),
+    },
+    {
+      type: "select",
+      key: "year",
+      label: t("giveawayChooseYear", { lng: userLang }),
+      options: getYearOptions(),
+    },
+    {
+      type: "select",
+      key: "month",
+      label: t("giveawayChooseMonth", { lng: userLang }),
+      options: [],
+    },
+    {
+      type: "modal",
+      key: "day",
+      label: t("giveawayChooseDay", { lng: userLang }),
+      modalId: "modal_day",
+      placeholder: "11",
+    },
+    {
+      type: "modal",
+      key: "time",
+      label: t("giveawayChooseTime", { lng: userLang }),
+      modalId: "modal_time",
+      placeholder: "HH:MM",
+    },
+    { type: "save", key: "save", label: t("save", { lng: userLang }) },
+  ];
+
+  const reply = await interaction.reply({
+    content: t("giveawaySetup", { lng: userLang }),
+    embeds: [generateWizardEmbed({}, userLang)],
+    components: generatePageComponents({ pages, pageIndex: 0 }, userLang).map(
+      (row) => row.toJSON(),
+    ),
+    withResponse: true,
+    flags: MessageFlags.Ephemeral,
+  });
+
+  const messageId = reply.resource?.message?.id;
+  if (messageId) {
+    wizards.set(messageId, {
+      pages,
+      pageIndex: 0,
+      data: {},
+      messageId,
+      userId: interaction.user.id,
+      subOnly: subCommand === "sub",
+    });
+  }
+}
+
+async function handleDelete(
+  interaction: ChatInputCommandInteraction,
+  userLang: string,
+): Promise<void> {
+  const giveawayId = interaction.options.getString("id", true);
+  const giveaway = await prisma.giveaway.findUnique({
+    where: { id: parseInt(giveawayId) },
+  });
+  if (!giveaway) {
+    return replyEphemeral(interaction, "giveawayNotFound", userLang);
+  }
+  if (!giveaway.channelId) {
+    return replyEphemeral(interaction, "invalidChannelOrPermissions", userLang);
+  }
+  const channel = await interaction.client.channels.fetch(giveaway.channelId);
+  if (!channel || !channel.isTextBased()) {
+    return replyEphemeral(interaction, "invalidChannelOrPermissions", userLang);
+  }
+
+  try {
+    const message = await channel.messages.fetch(giveaway.messageId);
+    if (message) {
+      await message.delete();
+    }
+    await prisma.giveaway.delete({ where: { id: giveaway.id } });
+    await replyEphemeral(interaction, "giveawayDeleted", userLang, {
+      prize: giveaway.prize,
+    });
+  } catch (error) {
+    console.error(
+      `Failed to delete giveaway message: ${giveaway.messageId}`,
+      error,
+    );
+    return replyEphemeral(interaction, "giveawayDeletedDBOnly", userLang);
+  }
+}
+
 export const execute = async (
   interaction: ChatInputCommandInteraction,
 ): Promise<void> => {
   const userLang = getUserLang(interaction.locale);
-  const subcommandGroup = interaction.options.getSubcommandGroup();
-  if (subcommandGroup === "create") {
-    if (
-      interaction.options.getSubcommand() === "sub" &&
-      !isSubscribersRolesConfigured()
-    ) {
-      await interaction.reply({
-        content: t("giveawaySubNotConfiguredAdmin", { lng: userLang }),
-        flags: MessageFlags.Ephemeral,
-      });
-      return;
-    }
-    const pages: GiveawayWizardPage[] = [
-      {
-        type: "modal",
-        key: "prize",
-        label: t("giveawayEnterPrize", { lng: userLang }),
-        modalId: "modal_prize",
-        placeholder: t("giveawayEnterPrize", { lng: userLang }),
-      },
-      {
-        type: "select",
-        key: "year",
-        label: t("giveawayChooseYear", { lng: userLang }),
-        options: getYearOptions(),
-      },
-      {
-        type: "select",
-        key: "month",
-        label: t("giveawayChooseMonth", { lng: userLang }),
-        options: [],
-      },
-      {
-        type: "modal",
-        key: "day",
-        label: t("giveawayChooseDay", { lng: userLang }),
-        modalId: "modal_day",
-        placeholder: "11",
-      },
-      {
-        type: "modal",
-        key: "time",
-        label: t("giveawayChooseTime", { lng: userLang }),
-        modalId: "modal_time",
-        placeholder: "HH:MM",
-      },
-      { type: "save", key: "save", label: t("save", { lng: userLang }) },
-    ];
+  const group = interaction.options.getSubcommandGroup(false);
+  const sub = interaction.options.getSubcommand();
 
-    const reply = await interaction.reply({
-      content: t("giveawaySetup", { lng: userLang }),
-      embeds: [generateWizardEmbed({}, userLang)],
-      components: generatePageComponents({ pages, pageIndex: 0 }, userLang).map(
-        (row) => row.toJSON(),
-      ),
-      withResponse: true,
-      flags: MessageFlags.Ephemeral,
-    });
-    wizards.set(reply.resource?.message?.id, {
-      pages,
-      pageIndex: 0,
-      data: {},
-      messageId: reply.resource?.message?.id,
-      userId: interaction.user.id,
-      subOnly: interaction.options.getSubcommand() === "sub",
-    });
-  } else {
-    const subcommand = interaction.options.getSubcommand();
-    if (subcommand === "delete") {
-      const giveawayId = interaction.options.getString("id", true);
-      const giveaway = await prisma.giveaway.findUnique({
-        where: { id: parseInt(giveawayId) },
-      });
-      if (!giveaway) {
-        await interaction.reply({
-          content: t("giveawayNotFound", { lng: userLang }),
-          flags: MessageFlags.Ephemeral,
-        });
-        return;
-      }
-      if (!giveaway.channelId) {
-        await interaction.reply({
-          content: t("invalidChannelOrPermissions", { lng: userLang }),
-          flags: MessageFlags.Ephemeral,
-        });
-        return;
-      }
-      const channel = await interaction.client.channels.fetch(
-        giveaway.channelId,
-      );
-      if (!channel || !channel.isTextBased()) {
-        await interaction.reply({
-          content: t("invalidChannelOrPermissions", { lng: userLang }),
-          flags: MessageFlags.Ephemeral,
-        });
-        return;
-      }
-      try {
-        if (giveaway.messageId) {
-          const message = await channel.messages.fetch(giveaway.messageId);
-          if (message) {
-            await message.delete();
-          }
-        }
-        await prisma.giveaway.delete({ where: { id: giveaway.id } });
-        await interaction.reply({
-          content: t("giveawayDeleted", {
-            prize: giveaway.prize,
-            lng: userLang,
-          }),
-          flags: MessageFlags.Ephemeral,
-        });
-      } catch {
-        console.error(
-          `Failed to delete message with ID: ${giveaway.messageId}`,
-        );
-        await interaction.reply({
-          content: t("giveawayDeletedDBOnly", { lng: userLang }),
-          flags: MessageFlags.Ephemeral,
-        });
-      }
-    } else {
-      await interaction.reply(t("unknownSubcommand", { lng: userLang }));
-    }
+  if (group === "create") {
+    return handleCreate(interaction, userLang);
   }
+  if (sub === "delete") {
+    return handleDelete(interaction, userLang);
+  }
+
+  await replyEphemeral(interaction, "unknownSubcommand", userLang);
 };
+
 export const autocomplete = async (
   interaction: AutocompleteInteraction,
 ): Promise<void> => {

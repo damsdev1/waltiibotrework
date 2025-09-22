@@ -4,6 +4,7 @@ import type { TranslationKeys } from "@/lib/types/i18n.js";
 import { getUserLang } from "@/lib/utils.js";
 import type {
   ChatInputCommandInteraction,
+  InteractionResponse,
   SlashCommandRoleOption,
   SlashCommandSubcommandBuilder,
 } from "discord.js";
@@ -13,20 +14,16 @@ import {
   SlashCommandBuilder,
 } from "discord.js";
 
-// Helper to create a channel-setting subcommand
-const createChannelSubcommand = (
-  name: string,
-  description: TranslationKeys,
-) => {
-  return (
-    subcommand: SlashCommandSubcommandBuilder,
-  ): SlashCommandSubcommandBuilder =>
-    subcommand
+// Helper to build role subcommands
+const createRoleSubcommand =
+  (name: string, descriptionKey: TranslationKeys) =>
+  (sub: SlashCommandSubcommandBuilder): SlashCommandSubcommandBuilder =>
+    sub
       .setName(name)
-      .setDescription(t(description))
-      .setDescriptionLocalizations(getAllLocalizedTranslations(description))
-      .addRoleOption((option: SlashCommandRoleOption) =>
-        option
+      .setDescription(t(descriptionKey))
+      .setDescriptionLocalizations(getAllLocalizedTranslations(descriptionKey))
+      .addRoleOption((opt: SlashCommandRoleOption) =>
+        opt
           .setName("role")
           .setDescription(t("roleManagerSlashCommandRoleOption"))
           .setDescriptionLocalizations(
@@ -34,118 +31,86 @@ const createChannelSubcommand = (
           )
           .setRequired(true),
       );
+
+// Subcommand → config key and success translation key
+const roleConfigMap: Record<
+  string,
+  { configKey: string; successKey: TranslationKeys }
+> = {
+  notif: { configKey: "roleNotif", successKey: "roleManagerNotifRoleDefined" },
+  unverified: {
+    configKey: "roleUnverified",
+    successKey: "roleManagerUnverifiedRoleDefined",
+  },
+  subscriber: {
+    configKey: "subscriberRoleId",
+    successKey: "roleManagerSubscriberRoleDefined",
+  },
+  t1sub: {
+    configKey: "T1SubRoleId",
+    successKey: "roleManagerT1SubRoleDefined",
+  },
+  t2sub: {
+    configKey: "T2SubRoleId",
+    successKey: "roleManagerT2SubRoleDefined",
+  },
+  t3sub: {
+    configKey: "T3SubRoleId",
+    successKey: "roleManagerT3SubRoleDefined",
+  },
 };
 
 export const data = new SlashCommandBuilder()
   .setName("roles")
   .setDescription(t("roleManagerSlashCommand"))
+  .addSubcommand(createRoleSubcommand("notif", "roleManagerSlashCommandNotif"))
   .addSubcommand(
-    createChannelSubcommand("notif", "roleManagerSlashCommandNotif"),
+    createRoleSubcommand("unverified", "roleManagerSlashCommandUnverified"),
   )
   .addSubcommand(
-    createChannelSubcommand("unverified", "roleManagerSlashCommandUnverified"),
+    createRoleSubcommand("subscriber", "roleManagerSlashCommandSubscriber"),
   )
-  .addSubcommand(
-    createChannelSubcommand("subscriber", "roleManagerSlashCommandSubscriber"),
-  )
-  .addSubcommand(
-    createChannelSubcommand("t1sub", "roleManagerSlashCommandT1Sub"),
-  )
-  .addSubcommand(
-    createChannelSubcommand("t2sub", "roleManagerSlashCommandT2Sub"),
-  )
-  .addSubcommand(
-    createChannelSubcommand("t3sub", "roleManagerSlashCommandT3Sub"),
-  )
+  .addSubcommand(createRoleSubcommand("t1sub", "roleManagerSlashCommandT1Sub"))
+  .addSubcommand(createRoleSubcommand("t2sub", "roleManagerSlashCommandT2Sub"))
+  .addSubcommand(createRoleSubcommand("t3sub", "roleManagerSlashCommandT3Sub"))
   .setDefaultMemberPermissions(PermissionFlagsBits.Administrator);
+
+const replyWithRole = async (
+  interaction: ChatInputCommandInteraction,
+  key: TranslationKeys,
+  roleId: string,
+  lng: string,
+): Promise<InteractionResponse<boolean>> =>
+  interaction.reply({
+    content: t(key, { role: `<@&${roleId}>`, lng }),
+    flags: MessageFlags.Ephemeral,
+  });
 
 export async function execute(
   interaction: ChatInputCommandInteraction,
 ): Promise<void> {
-  const userLang = getUserLang(interaction.locale);
+  const lng = getUserLang(interaction.locale);
+
   if (!interaction.guild) {
     await interaction.reply({
-      content: t("commandOnlyInGuild", { lng: userLang }),
+      content: t("commandOnlyInGuild", { lng }),
       flags: MessageFlags.Ephemeral,
     });
     return;
   }
 
-  const subcommand = interaction.options.getSubcommand();
+  const sub = interaction.options.getSubcommand();
   const role = interaction.options.getRole("role", true);
-  if (!role) {
+
+  const mapping = roleConfigMap[sub];
+  if (!mapping) {
     await interaction.reply({
-      content: t("roleNotFound", { lng: userLang }),
+      content: t("unknownSubcommand", { lng }),
       flags: MessageFlags.Ephemeral,
     });
     return;
   }
-  switch (subcommand) {
-    case "notif":
-      await setConfig("roleNotif", role.id);
-      await interaction.reply({
-        content: t("roleManagerNotifRoleDefined", {
-          role: `<@&${role.id}>`,
-          lng: userLang,
-        }),
-        flags: MessageFlags.Ephemeral,
-      });
-      break;
-    case "unverified":
-      await setConfig("roleUnverified", role.id);
-      await interaction.reply({
-        content: t("roleManagerUnverifiedRoleDefined", {
-          role: `<@&${role.id}>`,
-          lng: userLang,
-        }),
-        flags: MessageFlags.Ephemeral,
-      });
-      break;
-    case "subscriber":
-      await setConfig("subscriberRoleId", role.id);
-      await interaction.reply({
-        content: t("roleManagerSubscriberRoleDefined", {
-          role: `<@&${role.id}>`,
-          lng: userLang,
-        }),
-        flags: MessageFlags.Ephemeral,
-      });
-      break;
-    case "t1sub":
-      await setConfig("T1SubRoleId", role.id);
-      await interaction.reply({
-        content: t("roleManagerT1SubRoleDefined", {
-          role: `<@&${role.id}>`,
-          lng: userLang,
-        }),
-        flags: MessageFlags.Ephemeral,
-      });
-      break;
-    case "t2sub":
-      await setConfig("T2SubRoleId", role.id);
-      await interaction.reply({
-        content: t("roleManagerT2SubRoleDefined", {
-          role: `<@&${role.id}>`,
-          lng: userLang,
-        }),
-        flags: MessageFlags.Ephemeral,
-      });
-      break;
-    case "t3sub":
-      await setConfig("T3SubRoleId", role.id);
-      await interaction.reply({
-        content: t("roleManagerT3SubRoleDefined", {
-          role: `<@&${role.id}>`,
-          lng: userLang,
-        }),
-        flags: MessageFlags.Ephemeral,
-      });
-      break;
-    default:
-      await interaction.reply({
-        content: t("unknownSubcommand", { lng: userLang }),
-        flags: MessageFlags.Ephemeral,
-      });
-      break;
-  }
+
+  await setConfig(mapping.configKey, role.id);
+  await replyWithRole(interaction, mapping.successKey, role.id, lng);
 }

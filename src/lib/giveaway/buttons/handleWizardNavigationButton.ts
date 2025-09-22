@@ -5,7 +5,7 @@ import { wizards } from "@/lib/Store.js";
 import type { GiveawayWizard } from "@/lib/types/giveaway.js";
 import { getUserLang } from "@/lib/utils.js";
 import { GiveawayWizardDataValidator } from "@/lib/validators/giveaway.js";
-import type { ButtonInteraction, TextChannel } from "discord.js";
+import type { ButtonInteraction } from "discord.js";
 import {
   ActionRowBuilder,
   ButtonBuilder,
@@ -111,20 +111,19 @@ export const handleWizardNavigationButtons = async (
         );
 
         // Send message and create DB entry in parallel
-        const [message] = await Promise.all([
-          (channel as TextChannel).send({
-            embeds: [giveawayEmbed],
-            components: [row],
-          }),
-          addGiveaway({
-            channelId: channel.id,
-            prize,
-            endTime,
-            interactionId: interaction.message.id,
-            subOnly: wizard.subOnly,
-            messageId: null,
-          }),
-        ]);
+        const message = await channel.send({
+          embeds: [giveawayEmbed],
+          components: [row],
+        });
+
+        await addGiveaway({
+          channelId: channel.id,
+          prize,
+          endTime,
+          interactionId: interaction.message.id,
+          subOnly: wizard.subOnly,
+          messageId: message.id,
+        });
 
         // Update with actual message ID
         await prisma.giveaway.update({
