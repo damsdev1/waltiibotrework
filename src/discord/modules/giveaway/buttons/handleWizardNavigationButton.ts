@@ -16,16 +16,6 @@ import {
   EmbedBuilder,
 } from "discord.js";
 
-const validateDateTime = (
-  year: string,
-  month: string,
-  day: string,
-  time: string,
-): Date | null => {
-  const date = buildWizardDate(year, month, day, time);
-  return date && date > new Date() ? date : null;
-};
-
 export const isWizardNavigationButton = (
   interaction: ButtonInteraction,
   wizard: GiveawayWizard,
@@ -71,8 +61,9 @@ export const handleWizardNavigationButtons = async (
         return;
       }
       const { prize, year, month, day, time } = wizard.data;
-      const endTime = validateDateTime(year, month, day, time);
-      if (!endTime) {
+      // Use shared builder and ensure endTime is in the future
+      const endTime = buildWizardDate(year, month, day, time);
+      if (!endTime || endTime <= new Date()) {
         await interaction.update({
           content: t("giveawayWizardInvalidDate", { lng: userLang }),
           embeds: [],

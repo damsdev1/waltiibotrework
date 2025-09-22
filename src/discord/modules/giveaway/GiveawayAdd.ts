@@ -58,13 +58,11 @@ const getMember = async (
     if (!process.env.DISCORD_GUILD_ID) {
       throw new Error("DISCORD_GUILD_ID is not set in environment variables");
     }
-    const guilds = discordClient!.guilds.cache.get(
-      process.env.DISCORD_GUILD_ID,
-    );
-    if (!guilds) {
+    const guild = discordClient!.guilds.cache.get(process.env.DISCORD_GUILD_ID);
+    if (!guild) {
       throw new Error("Bot is not in the specified guild");
     }
-    return await guilds.members.fetch(userId);
+    return await guild.members.fetch(userId);
   }
 };
 

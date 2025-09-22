@@ -10,7 +10,8 @@ import type {
   ModalSubmitInteraction,
 } from "discord.js";
 import { MessageFlags } from "discord.js";
-import { t } from "i18next";
+// import { t } from "i18next";
+import { t } from "@/lib/locales/i18n.js";
 // New imports for helper
 import type { BotConfig } from "@/discord/ConfigManager.js";
 import { getConfig } from "@/discord/ConfigManager.js";
