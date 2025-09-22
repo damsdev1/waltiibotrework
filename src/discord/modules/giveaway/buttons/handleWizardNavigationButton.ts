@@ -5,6 +5,8 @@ import { wizards } from "@/lib/Store.js";
 import type { GiveawayWizard } from "@/lib/types/giveaway.js";
 import { getUserLang } from "@/lib/utils.js";
 import { GiveawayWizardDataValidator } from "@/lib/validators/giveaway.js";
+import { buildWizardDate } from "@/lib/validators/giveaway.js";
+import { WIZARD_NAV_IDS } from "@/discord/modules/giveaway/GiveawayUtils.js";
 import type { ButtonInteraction } from "discord.js";
 import {
   ActionRowBuilder,
@@ -20,17 +22,8 @@ const validateDateTime = (
   day: string,
   time: string,
 ): Date | null => {
-  const [h, m] = time.split(":");
-  if (!h || !m || isNaN(Number(h)) || isNaN(Number(m))) return null;
-
-  const date = new Date(
-    Number(year),
-    Number(month) - 1,
-    Number(day),
-    Number(h),
-    Number(m),
-  );
-  return date > new Date() ? date : null;
+  const date = buildWizardDate(year, month, day, time);
+  return date && date > new Date() ? date : null;
 };
 
 export const isWizardNavigationButton = (
@@ -39,12 +32,10 @@ export const isWizardNavigationButton = (
 ): boolean => {
   return (
     !!wizard &&
-    (interaction.customId === "back" ||
-      interaction.customId === "next" ||
-      interaction.customId === "cancel" ||
-      interaction.customId === "save")
+    WIZARD_NAV_IDS.includes(
+      interaction.customId as (typeof WIZARD_NAV_IDS)[number],
+    )
   );
-  // TODO: use centralized array?
 };
 
 export const handleWizardNavigationButtons = async (

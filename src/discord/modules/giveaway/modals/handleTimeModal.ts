@@ -2,6 +2,7 @@ import { replyEphemeral } from "@/discord/utils.js";
 import type { GiveawayWizard } from "@/lib/types/giveaway.js";
 import { getUserLang } from "@/lib/utils.js";
 import { MessageFlags, type ModalSubmitInteraction } from "discord.js";
+import { buildWizardDate } from "@/lib/validators/giveaway.js";
 
 export const isTimeModal = (interaction: ModalSubmitInteraction): boolean => {
   return interaction.customId === "modal_time";
@@ -23,15 +24,14 @@ export const handleTimeModal = async (
     return;
   }
 
-  const chosenDate = new Date(
-    Number(wizard.data.year),
-    Number(wizard.data.month) - 1,
-    Number(wizard.data.day),
-    h,
-    m,
+  const chosenDate = buildWizardDate(
+    String(wizard.data.year),
+    String(wizard.data.month),
+    String(wizard.data.day),
+    timeVal,
   );
 
-  if (chosenDate < new Date()) {
+  if (!chosenDate || chosenDate < new Date()) {
     return replyEphemeral(
       interaction,
       "giveawayWizardHandleDatePast",

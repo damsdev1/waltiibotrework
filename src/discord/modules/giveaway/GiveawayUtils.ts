@@ -17,6 +17,10 @@ export const isSubscribersRolesConfigured = (): boolean => {
   const T3SubRoleId = getConfig<string>("T3SubRoleId");
   return !!(subscriberRoleId || T1SubRoleId || T2SubRoleId || T3SubRoleId);
 };
+
+// Centralized wizard navigation button IDs
+export const WIZARD_NAV_IDS = ["back", "next", "cancel", "save"] as const;
+
 function generateWizardEmbed(
   wizard: Partial<GiveawayWizard> = {},
   userLang: string = "fr",

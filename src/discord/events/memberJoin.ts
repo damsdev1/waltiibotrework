@@ -1,5 +1,8 @@
 import { getConfig } from "@/discord/ConfigManager.js";
-import { formatTimeJoinLeaveMessage } from "@/discord/utils.js";
+import {
+  formatTimeJoinLeaveMessage,
+  sendEmbedToConfiguredChannel,
+} from "@/discord/utils.js";
 import type { GuildMember } from "discord.js";
 import { Events } from "discord.js";
 
@@ -7,53 +10,29 @@ export const name = Events.GuildMemberAdd;
 export const once = false;
 
 const sendMessageJoin = async (member: GuildMember): Promise<void> => {
-  const logsJoinChannelId = getConfig("logsJoinChannel");
-  if (!logsJoinChannelId) {
-    return;
-  }
-  try {
-    const logsJoinChannel = await member.guild.channels.fetch(
-      String(logsJoinChannelId),
-    );
-    if (!logsJoinChannel || !logsJoinChannel.isTextBased()) {
-      console.error("Le salon de logs de join n'est pas un salon textuel.");
-      return;
-    }
-    const joinEmbed = {
-      color: 0x0099ff,
-      title: "🧍‍♂️ Nouveau arrivant",
-      description: `${member.user.tag} vient d'arriver !`,
-      fields: [
-        {
-          name: "Mention",
-          value: `${member.toString()}`,
-          inline: false,
-        },
-        {
-          name: "Compte créé il y a",
-          value: formatTimeJoinLeaveMessage(member.user.createdAt),
-          inline: false,
-        },
-      ],
-      timestamp: new Date(member.user.createdAt.getTime()).toISOString(),
-      footer: {
-        text: `Développé par <@1123262077876850698>`,
+  const joinEmbed = {
+    color: 0x0099ff,
+    title: "🧍‍♂️ Nouveau arrivant",
+    description: `${member.user.tag} vient d'arriver !`,
+    fields: [
+      {
+        name: "Mention",
+        value: `${member.toString()}`,
+        inline: false,
       },
-    };
-    try {
-      await logsJoinChannel.send({ embeds: [joinEmbed] });
-    } catch (error) {
-      console.error(
-        "Erreur lors de l'envoi du message de logs de join :",
-        error,
-      );
-    }
-  } catch (error) {
-    console.error(
-      "Erreur lors de la récupération du salon de logs de join :",
-      error,
-    );
-  }
+      {
+        name: "Compte créé il y a",
+        value: formatTimeJoinLeaveMessage(member.user.createdAt),
+        inline: false,
+      },
+    ],
+    timestamp: new Date().toISOString(),
+    footer: { text: `Développé par <@1123262077876850698>` },
+  };
+
+  await sendEmbedToConfiguredChannel(member.guild, "logsJoinChannel", {
+    embeds: [joinEmbed],
+  });
 };
 
 const setNotifRole = async (member: GuildMember): Promise<void> => {
