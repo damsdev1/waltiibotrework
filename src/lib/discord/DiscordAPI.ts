@@ -27,7 +27,7 @@ export const getDiscordToken = async (
         code,
         grant_type: "authorization_code",
         redirect_uri:
-          process.env.REDIRECT_DISCORD_URI ?? "http://localhost:3000/oauth2",
+          process.env.REDIRECT_DISCORD_URI || "http://localhost:3000/oauth2",
         scope: "identify connections",
       }).toString(),
       headers: {
