@@ -44,8 +44,16 @@ model Giveaway {
   createdAt     DateTime        @default(now())
   updatedAt     DateTime        @updatedAt
   subOnly       Boolean         @default(false)
-  winnerUserId  String?
+  winnerCount    Int             @default(1)
+  winners       GiveawayWinner[]
   GiveawayEntry GiveawayEntry[]
+}
+
+model GiveawayWinner {
+  id         Int      @id @default(autoincrement())
+  giveawayId Int
+  userId     String
+  giveaway   Giveaway @relation(fields: [giveawayId], references: [id], onDelete: Cascade, onUpdate: Cascade)
 }
 
 model GiveawayEntry {

@@ -9,11 +9,12 @@ export interface GiveawayWizard {
   subOnly: boolean;
   update: boolean;
   giveawayId: number | null;
+  winnerCount: string;
 }
 
 export interface GiveawayWizardPage {
   type: "modal" | "select" | "save";
-  key?: string;
+  key: string;
   label: string;
   modalId?: string;
   options?: string[];

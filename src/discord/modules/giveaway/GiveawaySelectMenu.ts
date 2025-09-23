@@ -15,12 +15,12 @@ export const getMonthOptions = (selectedYear: string): string[] => {
   return Array.from({ length: 12 }, (_, i) => String(i + 1).padStart(2, "0"));
 };
 const updateMonthOptions = (
-  page: { key?: string },
+  page: { key: string; index: number },
   wizard: { pages: { options?: string[] }[] },
   value: string,
 ): void => {
   if (page.key === "year") {
-    wizard.pages[2].options = getMonthOptions(value);
+    wizard.pages[page.index + 1].options = getMonthOptions(value);
   }
 };
 
@@ -39,9 +39,10 @@ export const handleGiveawaySelectMenu = async (
   if (!page.key) {
     return;
   }
-  wizard.data[page.key as keyof typeof wizard.data] = interaction.values[0];
+  (wizard.data as Record<string, unknown>)[page.key as string] =
+    interaction.values[0];
   updateMonthOptions(
-    page,
+    { key: page.key, index: wizard.pageIndex },
     wizard as { pages: { options?: string[] }[] },
     interaction.values[0],
   );

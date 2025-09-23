@@ -67,6 +67,8 @@ export const handleWizardNavigationButtons = async (
       return;
     case "save": {
       if (!GiveawayWizardDataValidator.safeParse(wizard.data).success) {
+        console.log("Invalid giveaway data:", wizard.data);
+        console.error(GiveawayWizardDataValidator.safeParse(wizard.data).error);
         await interaction.update({
           content: t("giveawayWizardMissingData", { lng: userLang }),
           embeds: [],
@@ -75,16 +77,13 @@ export const handleWizardNavigationButtons = async (
         return;
       }
       const { prize, year, month, day, time } = wizard.data;
-      if (!prize || !year || !month || !day || !time) {
-        await interaction.update({
-          content: t("giveawayWizardMissingData", { lng: userLang }),
-          embeds: [],
-          components: [],
-        });
-        return;
-      }
       // Use shared builder and ensure endTime is in the future
-      const endTime = buildWizardDate(year, month, day, time);
+      const endTime = buildWizardDate(
+        String(year),
+        String(month),
+        String(day),
+        String(time),
+      );
       if (!endTime || endTime <= new Date()) {
         await interaction.update({
           content: t("giveawayWizardInvalidDate", { lng: userLang }),
@@ -120,23 +119,29 @@ export const handleWizardNavigationButtons = async (
           const giveawayOrignal = await prisma.giveaway.findFirst({
             where: { id: wizard.giveawayId },
             select: {
-              winnerUserId: true,
               interactionId: true,
               messageId: true,
             },
           });
           if (endTime <= new Date()) {
+            const winners = await prisma.giveawayWinner.findMany({
+              where: { giveawayId: wizard.giveawayId },
+              select: { userId: true },
+            });
             ended = true;
             embed = createGiveawayEmbedFinished(
-              prize,
+              prize || "No prize",
               entriesNumber,
-              giveawayOrignal?.winnerUserId
-                ? [giveawayOrignal.winnerUserId]
-                : [],
+              winners.map((w) => w.userId),
               endTime,
             );
           } else {
-            embed = createGiveawayEmbed(prize, entriesNumber, endTime);
+            embed = createGiveawayEmbed(
+              prize || "No prize",
+              entriesNumber,
+              endTime,
+              Number(wizard.winnerCount) || 1,
+            );
             const participateButton = new ButtonBuilder()
               .setCustomId(`giveaway_join_${giveawayOrignal?.interactionId}`)
               .setLabel(t("giveawayAnnounceJoinButton"))
@@ -171,6 +176,7 @@ export const handleWizardNavigationButtons = async (
                   ended,
                   endTime,
                   subOnly: wizard.subOnly,
+                  winnerCount: Number(wizard.winnerCount) || 1,
                 },
               });
               await cancelGiveawayMessageUpdate(wizard.giveawayId);
@@ -204,17 +210,25 @@ export const handleWizardNavigationButtons = async (
 
         // Send message and create DB entry in parallel
         const message = await channel.send({
-          embeds: [createGiveawayEmbed(prize, 0, endTime)],
+          embeds: [
+            createGiveawayEmbed(
+              prize || "No prize",
+              0,
+              endTime,
+              Number(wizard.winnerCount) || 1,
+            ),
+          ],
           components: [row],
         });
 
         await addGiveaway({
           channelId: channel.id,
-          prize,
+          prize: prize || "No prize",
           endTime,
           interactionId: interaction.message.id,
           subOnly: wizard.subOnly,
           messageId: message.id,
+          winnerCount: Number(wizard.winnerCount) || 1,
         });
 
         // Update with actual message ID

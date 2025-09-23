@@ -1,7 +1,7 @@
 import { cancelGiveawayMessageUpdate } from "@/discord/modules/giveaway/GiveawayMessageUpdaterScheduler.js";
 import {
   cancelGiveawayScheduler,
-  processWinner,
+  processWinners,
   scheduleGiveaway,
 } from "@/discord/modules/giveaway/GiveawayScheduler.js";
 import { getMonthOptions } from "@/discord/modules/giveaway/GiveawaySelectMenu.js";
@@ -54,6 +54,12 @@ const getPages = (
     label: t("giveawayEnterPrize", { lng: userLang }),
     modalId: "modal_prize",
     placeholder: t("giveawayEnterPrize", { lng: userLang }),
+  },
+  {
+    type: "select",
+    key: "winnerCount",
+    label: t("back", { lng: userLang }),
+    options: ["1", "2", "3", "4", "5", "10", "20", "50", "100"].map(String),
   },
   {
     type: "select",
@@ -213,6 +219,7 @@ async function handleCreate(
       subOnly: subCommand === "sub",
       update: false,
       giveawayId: null,
+      winnerCount: "1",
     });
   }
 }
@@ -283,6 +290,7 @@ async function handleEdit(
       subOnly: giveaway.subOnly,
       update: true,
       giveawayId: giveaway.id,
+      winnerCount: String(giveaway.winnerCount),
     });
     const wizard = wizards.get(messageId);
     console.log(wizard);
@@ -329,7 +337,7 @@ async function handleRoll(
 ): Promise<void> {
   const giveawayId = interaction.options.getString("id", true);
   try {
-    const result = await processWinner(
+    const result = await processWinners(
       parseInt(giveawayId, 10),
       interaction.client.channels ?? null,
       reroll,
@@ -368,10 +376,14 @@ async function handleResend(
       let embed;
       const rows = [];
       if (giveaway.ended) {
+        const winners = await prisma.giveawayWinner.findMany({
+          where: { giveawayId: giveaway.id },
+        });
+        const winnerUserIds = winners.map((winner) => winner.userId);
         embed = createGiveawayEmbedFinished(
           giveaway.prize,
           entriesNumber,
-          giveaway.winnerUserId ? [giveaway.winnerUserId] : [],
+          winnerUserIds,
           giveaway.endTime,
         );
       } else {
@@ -379,6 +391,7 @@ async function handleResend(
           giveaway.prize,
           entriesNumber,
           giveaway.endTime,
+          giveaway.winnerCount,
         );
         const participateButton = new ButtonBuilder()
           .setCustomId(`giveaway_join_${giveaway.interactionId}`)

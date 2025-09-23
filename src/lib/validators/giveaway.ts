@@ -2,6 +2,10 @@ import z from "zod";
 
 export const GiveawayWizardDataValidator = z.object({
   prize: z.string().min(1),
+  // winner count between 1 and 100 string
+  winnerCount: z
+    .string()
+    .regex(/^(100|[1-9]\d?)$/, "Winner count must be between 1 and 100"),
   year: z.string().regex(/^\d{4}$/, "Year must be a 4-digit number"),
   month: z
     .string()

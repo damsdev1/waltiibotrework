@@ -48,6 +48,7 @@ export const requestGiveawayMessageUpdate = async (
                 giveaway.prize,
                 entriesNumber,
                 giveaway.endTime,
+                giveaway.winnerCount,
               ),
             ],
           });

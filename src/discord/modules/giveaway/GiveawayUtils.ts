@@ -36,6 +36,13 @@ function generateWizardEmbed(
         inline: true,
       },
       {
+        name: t("back", { lng: userLang }),
+        value: d.winnerCount
+          ? String(d.winnerCount)
+          : t("giveawayWizardNotSet", { lng: userLang }),
+        inline: true,
+      },
+      {
         name: t("giveawayWizardYear", { lng: userLang }),
         value: d.year || t("giveawayWizardNotSet", { lng: userLang }),
         inline: true,
@@ -152,10 +159,11 @@ const createGiveawayDescription = (
   prize: string,
   entriesNumber: number,
   endTime: Date,
+  winnerCount: number,
 ): string => {
   return `${t("giveawayAnnouncePrize", { prize })}\n\n${t("giveawayAnnounceEnds")}: <t:${Math.floor(
     endTime.getTime() / 1000,
-  )}:F>\nParticipants: ${entriesNumber}`;
+  )}:F>\nParticipants: **${entriesNumber}**\nGagnants: **${winnerCount}**`;
 };
 
 const createGiveawayDescriptionFinished = (
@@ -170,17 +178,20 @@ const createGiveawayDescriptionFinished = (
       : "Aucun gagnant";
   return `${t("giveawayAnnouncePrize", { prize })}\n\n${t("giveawayAnnounceEnds")}: <t:${Math.floor(
     endTime.getTime() / 1000,
-  )}:F>\nParticipants: ${entriesNumber}\nGagnants: ${winners}`;
+  )}:F>\nParticipants: **${entriesNumber}**\nGagnants: **${winners}**`;
 };
 
 export const createGiveawayEmbed = (
   prize: string,
   entriesNumber: number,
   endTime: Date,
+  winnerCount: number,
 ): EmbedBuilder =>
   new EmbedBuilder()
     .setTitle(t("giveawayAnnounceTitle"))
-    .setDescription(createGiveawayDescription(prize, entriesNumber, endTime))
+    .setDescription(
+      createGiveawayDescription(prize, entriesNumber, endTime, winnerCount),
+    )
     .setColor("Purple");
 
 export const createGiveawayEmbedFinished = (
