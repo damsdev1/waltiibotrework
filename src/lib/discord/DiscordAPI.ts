@@ -108,6 +108,7 @@ export const getDiscordConnections = async (
     tokenData,
     fetchConnections,
   );
+  console.log(response);
 
   if (response.statusCode < 200 || response.statusCode >= 300) {
     throw new DiscordFetchAPIError(
