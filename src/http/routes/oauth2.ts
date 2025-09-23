@@ -34,9 +34,8 @@ const routes = async (fastify: FastifyInstance): Promise<void> => {
               tokenExpiry: discordToken.tokenExpiry,
             },
           });
-
-          await validatePendingUser(discordUser.id);
         });
+        await validatePendingUser(discordUser.id);
 
         return reply.sendFile("oauthdone.html");
       } catch (error) {

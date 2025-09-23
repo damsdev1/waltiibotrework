@@ -22,14 +22,12 @@ const handleAuthorize = async (
     ...authorizeComponent,
     flags: MessageFlags.Ephemeral,
     content: authorizeComponent.content ?? undefined,
-    withResponse: true,
   });
-  await interaction.fetchReply();
   await addUserToPending({
     userId: interaction.user.id,
     giveawayId: giveaway.interactionId,
     interaction: interaction,
-    expiresAt: new Date(Date.now() + 1 * 60 * 1000), // Expires in 1 minute
+    expiresAt: new Date(Date.now() + 2 * 60 * 1000), // Expires in 2 minutes
   });
 };
 
