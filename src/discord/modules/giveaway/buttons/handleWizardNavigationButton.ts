@@ -140,7 +140,7 @@ export const handleWizardNavigationButtons = async (
               prize || "No prize",
               entriesNumber,
               endTime,
-              Number(wizard.winnerCount) || 1,
+              Number(wizard.data.winnerCount) || 1,
             );
             const participateButton = new ButtonBuilder()
               .setCustomId(`giveaway_join_${giveawayOrignal?.interactionId}`)
@@ -176,7 +176,7 @@ export const handleWizardNavigationButtons = async (
                   ended,
                   endTime,
                   subOnly: wizard.subOnly,
-                  winnerCount: Number(wizard.winnerCount) || 1,
+                  winnerCount: Number(wizard.data.winnerCount) || 1,
                 },
               });
               await cancelGiveawayMessageUpdate(wizard.giveawayId);
@@ -207,7 +207,7 @@ export const handleWizardNavigationButtons = async (
         const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
           participateButton,
         );
-
+        console.log(wizard);
         // Send message and create DB entry in parallel
         const message = await channel.send({
           embeds: [
@@ -215,7 +215,7 @@ export const handleWizardNavigationButtons = async (
               prize || "No prize",
               0,
               endTime,
-              Number(wizard.winnerCount) || 1,
+              Number(wizard.data.winnerCount) || 1,
             ),
           ],
           components: [row],
@@ -228,7 +228,7 @@ export const handleWizardNavigationButtons = async (
           interactionId: interaction.message.id,
           subOnly: wizard.subOnly,
           messageId: message.id,
-          winnerCount: Number(wizard.winnerCount) || 1,
+          winnerCount: Number(wizard.data.winnerCount) || 1,
         });
 
         // Update with actual message ID

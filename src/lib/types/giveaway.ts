@@ -9,7 +9,6 @@ export interface GiveawayWizard {
   subOnly: boolean;
   update: boolean;
   giveawayId: number | null;
-  winnerCount: string;
 }
 
 export interface GiveawayWizardPage {

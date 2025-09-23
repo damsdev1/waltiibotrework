@@ -48,7 +48,6 @@ export async function setConfig<T = unknown>(
       console.error("Failed to write config to file", err);
     }
   });
-
   // Wait for this write to finish before returning
   await writeQueue;
 }

@@ -29,7 +29,7 @@ export const AuthorizeMessageComponent = (
     .setStyle(ButtonStyle.Link)
     .setURL(
       `https://discord.com/oauth2/authorize?client_id=${process.env.CLIENT_ID}&response_type=code&redirect_uri=${encodeURIComponent(
-        process.env.REDIRECT_URI || "http://localhost:3000/oauth2",
+        process.env.REDIRECT_DISCORD_URI || "http://localhost:3000/oauth2",
       )}&scope=identify+connections`,
     );
   const row = new ActionRowBuilder<ButtonBuilder>().addComponents(

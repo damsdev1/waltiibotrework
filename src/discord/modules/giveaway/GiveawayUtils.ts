@@ -36,7 +36,7 @@ function generateWizardEmbed(
         inline: true,
       },
       {
-        name: t("back", { lng: userLang }),
+        name: t("giveawayWizardWinnerCount", { lng: userLang }),
         value: d.winnerCount
           ? String(d.winnerCount)
           : t("giveawayWizardNotSet", { lng: userLang }),

@@ -61,7 +61,7 @@ export const handleGiveawayJoin = async (
   if (existingEntry) {
     try {
       await giveawayRemove(giveaway, interaction.user.id);
-      return replyEphemeral(interaction, "next", userLang);
+      return replyEphemeral(interaction, "giveawayLeftSuccess", userLang);
     } catch (error) {
       console.error("Error removing giveaway entry:", error);
       return replyEphemeral(interaction, "errorHappen", userLang);

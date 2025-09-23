@@ -1,3 +1,4 @@
+import { default as RoutesEventSubTwitch } from "@/http/routes/eventsubtwitch.js";
 import { default as RoutesOauth2 } from "@/http/routes/oauth2.js";
 import { getDirName } from "@/lib/utils.js";
 import Fastify from "fastify";
@@ -12,6 +13,7 @@ fastify.register(import("@fastify/static"), {
   prefix: "/assets/", // optional: default '/'
 });
 fastify.register(RoutesOauth2);
+fastify.register(RoutesEventSubTwitch);
 
 const startWebServer = async (): Promise<void> => {
   try {

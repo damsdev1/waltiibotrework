@@ -43,6 +43,14 @@ function getYearOptions(): string[] {
   const currentYear = now.getFullYear();
   return Array.from({ length: 5 }, (_, i) => String(currentYear + i));
 }
+function generateWinnerCountOptions(): string[] {
+  const max = 25;
+  const options = [];
+  for (let i = 1; i <= max; i++) {
+    options.push(String(i));
+  }
+  return options;
+}
 const getPages = (
   userLang: string,
   monthOptions: string[] = [],
@@ -58,8 +66,8 @@ const getPages = (
   {
     type: "select",
     key: "winnerCount",
-    label: t("back", { lng: userLang }),
-    options: ["1", "2", "3", "4", "5", "10", "20", "50", "100"].map(String),
+    label: t("giveawayWizardWinnerCount", { lng: userLang }),
+    options: generateWinnerCountOptions(),
   },
   {
     type: "select",
@@ -219,7 +227,6 @@ async function handleCreate(
       subOnly: subCommand === "sub",
       update: false,
       giveawayId: null,
-      winnerCount: "1",
     });
   }
 }
@@ -275,7 +282,7 @@ async function handleEdit(
       pages: getPages(
         userLang,
         getMonthOptions(String(giveaway.endTime.getFullYear())),
-        "back",
+        "giveawayWizardEdit",
       ),
       pageIndex: 0,
       data: {
@@ -284,13 +291,13 @@ async function handleEdit(
         month: String(giveaway.endTime.getMonth() + 1).padStart(2, "0"),
         day: String(giveaway.endTime.getDate()).padStart(2, "0"),
         time: giveaway.endTime.toTimeString().slice(0, 5),
+        winnerCount: String(giveaway.winnerCount),
       },
       messageId,
       userId: interaction.user.id,
       subOnly: giveaway.subOnly,
       update: true,
       giveawayId: giveaway.id,
-      winnerCount: String(giveaway.winnerCount),
     });
     const wizard = wizards.get(messageId);
     console.log(wizard);
@@ -419,7 +426,7 @@ async function handleResend(
           await cancelGiveawayScheduler(giveaway.id);
           scheduleGiveaway(giveaway);
         }
-        return replyEphemeral(interaction, "back", userLang, {
+        return replyEphemeral(interaction, "giveawayResendSuccess", userLang, {
           prize: giveaway.prize,
         });
       }
@@ -475,10 +482,21 @@ export const autocomplete = async (
       prize: { contains: focusedValue },
     },
   });
+  const formatDate = (date: Date): string => {
+    return date.toLocaleString("fr-FR", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false, // 24h format
+    });
+  };
 
   return interaction.respond(
     choices.map((choice) => ({
-      name: String(choice.prize),
+      // i want name like this: DD/MM/YYYY HH:MM - Prize
+      name: `${formatDate(choice.endTime)} - ${choice.prize}`,
       value: String(choice.id),
     })),
   );
