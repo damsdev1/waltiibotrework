@@ -1,7 +1,7 @@
 import { loadConfig } from "@/discord/ConfigManager.js";
 import { intents, partials } from "@/discord/intents.js";
+import { initializeDiscordClientExporter } from "@/discord/modules/DiscordClientExporter.js";
 import { initializeGiveawayScheduler } from "@/discord/modules/giveaway/GiveawayScheduler.js";
-import { initializeDiscordPendingUsersScheduler } from "@/lib/discord/DiscordPendingAuthorizedUsers.js";
 import { getDirName } from "@/lib/utils.js";
 import { Client, Collection, REST, Routes } from "discord.js";
 import * as fs from "fs";
@@ -88,8 +88,8 @@ const botStart = async (): Promise<void> => {
     await loadRest(commands);
     await loadEvents();
     await client.login(process.env.TOKEN);
-    await initializeGiveawayScheduler(client);
-    await initializeDiscordPendingUsersScheduler(client);
+    await initializeDiscordClientExporter(client);
+    await initializeGiveawayScheduler();
   } catch (error) {
     console.error("Error starting bot:", error);
   }

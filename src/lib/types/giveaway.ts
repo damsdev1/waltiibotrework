@@ -3,10 +3,12 @@ import type { GiveawayWizardData } from "@/lib/validators/giveaway.js";
 export interface GiveawayWizard {
   pages: Array<GiveawayWizardPage>;
   pageIndex: number;
-  data: GiveawayWizardData;
+  data: Partial<GiveawayWizardData>;
   messageId: string;
   userId: string;
   subOnly: boolean;
+  update: boolean;
+  giveawayId: number | null;
 }
 
 export interface GiveawayWizardPage {
@@ -19,5 +21,5 @@ export interface GiveawayWizardPage {
 }
 
 export interface GiveawayWizardPageModal extends GiveawayWizardPage {
-  placeholder: string;
+  placeholder?: string;
 }

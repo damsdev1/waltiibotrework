@@ -1,21 +1,19 @@
+import type { BotConfig } from "@/discord/ConfigManager.js";
+import { getConfig } from "@/discord/ConfigManager.js";
+import { t } from "@/lib/locales/i18n.js";
 import type { TranslationKeys } from "@/lib/types/i18n.js";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration.js";
 import relativeTime from "dayjs/plugin/relativeTime.js";
 import type {
   CommandInteraction,
+  Guild,
   MessageComponentInteraction,
   MessageCreateOptions,
   MessagePayload,
   ModalSubmitInteraction,
 } from "discord.js";
 import { MessageFlags } from "discord.js";
-// import { t } from "i18next";
-import { t } from "@/lib/locales/i18n.js";
-// New imports for helper
-import type { BotConfig } from "@/discord/ConfigManager.js";
-import { getConfig } from "@/discord/ConfigManager.js";
-import type { Guild } from "discord.js";
 
 dayjs.extend(duration);
 dayjs.extend(relativeTime);

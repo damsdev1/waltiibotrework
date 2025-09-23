@@ -3,7 +3,7 @@ import { wizards } from "@/lib/Store.js";
 import { getUserLang } from "@/lib/utils.js";
 import type { Interaction } from "discord.js";
 
-const getMonthOptions = (selectedYear: string): string[] => {
+export const getMonthOptions = (selectedYear: string): string[] => {
   const now = new Date();
   const currentYear = now.getFullYear();
   const currentMonth = now.getMonth() + 1;
@@ -15,8 +15,8 @@ const getMonthOptions = (selectedYear: string): string[] => {
   return Array.from({ length: 12 }, (_, i) => String(i + 1).padStart(2, "0"));
 };
 const updateMonthOptions = (
-  page: { key: string },
-  wizard: { pages: { options: string[] }[] },
+  page: { key?: string },
+  wizard: { pages: { options?: string[] }[] },
   value: string,
 ): void => {
   if (page.key === "year") {
@@ -36,8 +36,15 @@ export const handleGiveawaySelectMenu = async (
   }
 
   const page = wizard.pages[wizard.pageIndex];
-  wizard.data[page.key] = interaction.values[0];
-  updateMonthOptions(page, wizard, interaction.values[0]);
+  if (!page.key) {
+    return;
+  }
+  wizard.data[page.key as keyof typeof wizard.data] = interaction.values[0];
+  updateMonthOptions(
+    page,
+    wizard as { pages: { options?: string[] }[] },
+    interaction.values[0],
+  );
   wizard.pageIndex = Math.min(wizard.pages.length - 1, wizard.pageIndex + 1);
 
   const userLang = getUserLang(interaction.locale);

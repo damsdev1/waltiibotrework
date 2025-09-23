@@ -1,4 +1,3 @@
-import { wizardEmbedContent } from "@/discord/modules/giveaway/GiveawayUtils.js";
 import {
   handleDayModal,
   isDayModal,
@@ -21,27 +20,28 @@ export const handleModalSubmit = async (
   if (!interaction.isModalSubmit()) {
     return;
   }
-  const wizard = wizards.get(interaction.message?.id);
+  const messageId = interaction.message?.id;
+  if (!messageId) {
+    return;
+  }
+  const wizard = wizards.get(messageId);
   if (!wizard || wizard.userId !== interaction.user.id) {
     return;
   }
+  const userLang = getUserLang(interaction.locale);
+
   // ✅ Handle each modal
   switch (true) {
     case isPrizeModal(interaction):
-      await handlePrizeModal(interaction, wizard);
+      await handlePrizeModal(interaction, wizard, userLang);
       break;
     case isDayModal(interaction):
-      await handleDayModal(interaction, wizard);
+      await handleDayModal(interaction, wizard, userLang);
       break;
     case isTimeModal(interaction):
-      await handleTimeModal(interaction, wizard);
+      await handleTimeModal(interaction, wizard, userLang);
       break;
     default:
       return; // unknown modal type
   }
-
-  const userLang = getUserLang(interaction.locale);
-  // Update the wizard message
-  await interaction.deferUpdate();
-  await interaction.editReply(wizardEmbedContent(userLang, wizard));
 };

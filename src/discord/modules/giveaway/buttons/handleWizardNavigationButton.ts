@@ -1,19 +1,30 @@
-import { addGiveaway } from "@/discord/modules/giveaway/GiveawayScheduler.js";
+import { cancelGiveawayMessageUpdate } from "@/discord/modules/giveaway/GiveawayMessageUpdaterScheduler.js";
+import {
+  addGiveaway,
+  cancelGiveawayScheduler,
+  scheduleGiveaway,
+} from "@/discord/modules/giveaway/GiveawayScheduler.js";
+import {
+  createGiveawayEmbed,
+  createGiveawayEmbedFinished,
+  WIZARD_NAV_IDS,
+  wizardEmbedContent,
+} from "@/discord/modules/giveaway/GiveawayUtils.js";
 import { t } from "@/lib/locales/i18n.js";
 import { prisma } from "@/lib/prisma.js";
 import { wizards } from "@/lib/Store.js";
 import type { GiveawayWizard } from "@/lib/types/giveaway.js";
 import { getUserLang } from "@/lib/utils.js";
-import { GiveawayWizardDataValidator } from "@/lib/validators/giveaway.js";
-import { buildWizardDate } from "@/lib/validators/giveaway.js";
-import { WIZARD_NAV_IDS } from "@/discord/modules/giveaway/GiveawayUtils.js";
+import {
+  buildWizardDate,
+  GiveawayWizardDataValidator,
+} from "@/lib/validators/giveaway.js";
 import type { ButtonInteraction } from "discord.js";
 import {
   ActionRowBuilder,
   ButtonBuilder,
   ButtonStyle,
   ChannelType,
-  EmbedBuilder,
 } from "discord.js";
 
 export const isWizardNavigationButton = (
@@ -36,20 +47,23 @@ export const handleWizardNavigationButtons = async (
   switch (interaction.customId) {
     case "back":
       wizard.pageIndex = Math.max(0, wizard.pageIndex - 1);
+      await interaction.update(wizardEmbedContent(userLang, wizard));
       return;
     case "next":
       wizard.pageIndex = Math.min(
         wizard.pages.length - 1,
         wizard.pageIndex + 1,
       );
+      console.log(wizard);
+      await interaction.update(wizardEmbedContent(userLang, wizard));
       return;
     case "cancel":
+      wizards.delete(interaction.message.id);
       await interaction.update({
         content: t("giveawayWizardCancelled", { lng: userLang }),
         embeds: [],
         components: [],
       });
-      wizards.delete(interaction.message.id);
       return;
     case "save": {
       if (!GiveawayWizardDataValidator.safeParse(wizard.data).success) {
@@ -61,6 +75,14 @@ export const handleWizardNavigationButtons = async (
         return;
       }
       const { prize, year, month, day, time } = wizard.data;
+      if (!prize || !year || !month || !day || !time) {
+        await interaction.update({
+          content: t("giveawayWizardMissingData", { lng: userLang }),
+          embeds: [],
+          components: [],
+        });
+        return;
+      }
       // Use shared builder and ensure endTime is in the future
       const endTime = buildWizardDate(year, month, day, time);
       if (!endTime || endTime <= new Date()) {
@@ -85,16 +107,92 @@ export const handleWizardNavigationButtons = async (
       }
 
       try {
-        // Create giveaway and message in parallel where possible
-        const giveawayEmbed = new EmbedBuilder()
-          .setTitle(t("giveawayAnnounceTitle"))
-          .setDescription(t("giveawayAnnouncePrize", { prize }))
-          .addFields({
-            name: t("giveawayAnnounceEnds"),
-            value: `<t:${Math.floor(endTime.getTime() / 1000)}:F>`,
-          })
-          .setColor("Aqua");
+        if (wizard.update) {
+          if (!wizard.giveawayId) {
+            return;
+          }
+          const entriesNumber = await prisma.giveawayEntry.count({
+            where: { giveawayId: wizard.giveawayId },
+          });
+          const rows = [];
+          let embed;
+          let ended = false;
+          const giveawayOrignal = await prisma.giveaway.findFirst({
+            where: { id: wizard.giveawayId },
+            select: {
+              winnerUserId: true,
+              interactionId: true,
+              messageId: true,
+            },
+          });
+          if (endTime <= new Date()) {
+            ended = true;
+            embed = createGiveawayEmbedFinished(
+              prize,
+              entriesNumber,
+              giveawayOrignal?.winnerUserId
+                ? [giveawayOrignal.winnerUserId]
+                : [],
+              endTime,
+            );
+          } else {
+            embed = createGiveawayEmbed(prize, entriesNumber, endTime);
+            const participateButton = new ButtonBuilder()
+              .setCustomId(`giveaway_join_${giveawayOrignal?.interactionId}`)
+              .setLabel(t("giveawayAnnounceJoinButton"))
+              .setStyle(ButtonStyle.Primary);
 
+            rows.push(
+              new ActionRowBuilder<ButtonBuilder>().addComponents(
+                participateButton,
+              ),
+            );
+          }
+          const message = giveawayOrignal?.messageId
+            ? await channel.messages
+                .fetch(giveawayOrignal.messageId)
+                .catch(() => null)
+            : null;
+          console.log(message);
+          if (!message) {
+            const messageSend = await channel
+              .send({
+                embeds: [embed],
+                components: rows.map((r) => r.toJSON()),
+              })
+              .catch(() => null);
+            if (messageSend) {
+              await prisma.giveaway.update({
+                where: { id: wizard.giveawayId },
+                data: {
+                  prize,
+                  channelId: channel.id,
+                  messageId: messageSend.id,
+                  ended,
+                  endTime,
+                  subOnly: wizard.subOnly,
+                },
+              });
+              await cancelGiveawayMessageUpdate(wizard.giveawayId);
+              await cancelGiveawayScheduler(wizard.giveawayId);
+              if (!ended) {
+                scheduleGiveaway({ id: wizard.giveawayId, endTime });
+              }
+            }
+            return;
+          } else {
+            await message.edit({
+              embeds: [embed],
+              components: rows.map((r) => r.toJSON()),
+            });
+          }
+          await interaction.update({
+            content: t("giveawayCreatedSuccessfully", { lng: userLang }),
+            embeds: [],
+            components: [],
+          });
+          return;
+        }
         const participateButton = new ButtonBuilder()
           .setCustomId(`giveaway_join_${interaction.message.id}`)
           .setLabel(t("giveawayAnnounceJoinButton"))
@@ -106,7 +204,7 @@ export const handleWizardNavigationButtons = async (
 
         // Send message and create DB entry in parallel
         const message = await channel.send({
-          embeds: [giveawayEmbed],
+          embeds: [createGiveawayEmbed(prize, 0, endTime)],
           components: [row],
         });
 
@@ -132,6 +230,7 @@ export const handleWizardNavigationButtons = async (
           embeds: [],
           components: [],
         });
+        return;
       } catch (error) {
         console.error("Error creating giveaway:", error);
         await interaction.update({
@@ -139,8 +238,8 @@ export const handleWizardNavigationButtons = async (
           embeds: [],
           components: [],
         });
+        return;
       }
-      return;
     }
   }
 };

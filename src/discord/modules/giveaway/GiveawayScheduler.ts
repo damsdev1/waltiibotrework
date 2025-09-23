@@ -1,12 +1,14 @@
 // GiveawayScheduler.ts
 import type { Giveaway, GiveawayEntry } from "@/../generated/prisma/index.js";
+import { getDiscordClient } from "@/discord/modules/DiscordClientExporter.js";
+import { createGiveawayEmbedFinished } from "@/discord/modules/giveaway/GiveawayUtils.js";
 import { t } from "@/lib/locales/i18n.js";
 import { prisma } from "@/lib/prisma.js";
+import type { TranslationKeys } from "@/lib/types/i18n.js";
 import crypto from "crypto";
-import { EmbedBuilder, type Client } from "discord.js";
+import type { ChannelManager } from "discord.js";
 
 const GiveawaySchedulerMap = new Map<number, NodeJS.Timeout>();
-let DiscordClient: Client | undefined = undefined;
 
 const secureRandom = (max: number): number => {
   // Generate 6 bytes (48 bits) of entropy
@@ -42,6 +44,80 @@ const processGiveawayEnd = (
   return weightedPick(usersIds, weights);
 };
 
+export const processWinner = async (
+  giveawayId: number,
+  channelManager: ChannelManager | null,
+  checkEnded: boolean = true,
+): Promise<TranslationKeys> => {
+  const entries = await prisma.giveawayEntry.findMany({
+    where: { giveawayId },
+  });
+  const winner = processGiveawayEnd(entries);
+  if (winner) {
+    try {
+      const giveawayData = await prisma.giveaway.findUnique({
+        where: { id: giveawayId },
+      });
+      if (checkEnded && giveawayData?.ended) {
+        return "giveawayAlreadyEnded";
+      }
+      if (!giveawayData || !giveawayData.channelId || !giveawayData.messageId) {
+        console.error(
+          `Giveaway data not found for ID: ${giveawayId} or missing channel/message ID`,
+        );
+        return "giveawayNotFound";
+      }
+      try {
+        const channel = await channelManager?.fetch(giveawayData.channelId);
+        if (!channel || !channel.isTextBased()) {
+          console.error(
+            `Channel not found or not text-based for ID: ${giveawayData.channelId}`,
+          );
+          return "giveawayNotFound";
+        }
+        const message = await channel.messages.fetch(giveawayData.messageId);
+        if (!message) {
+          console.error(`Message not found for ID: ${giveawayData.messageId}`);
+          return "giveawayNotFound";
+        }
+
+        await message.edit({
+          content: t("giveawayEndedWinnerAnnouncement", {
+            winnerId: `<@${winner}>`,
+            prize: giveawayData.prize,
+          }),
+          components: [],
+          embeds: [
+            createGiveawayEmbedFinished(
+              giveawayData.prize,
+              entries.length,
+              [winner],
+              giveawayData.endTime,
+            ),
+          ],
+        });
+      } catch (error) {
+        console.error(
+          `Error fetching channel or message for giveaway ID: ${giveawayId}`,
+          error,
+        );
+        return "giveawayNotFound";
+      }
+    } catch (error) {
+      console.error(
+        `Error fetching giveaway data for ID: ${giveawayId}`,
+        error,
+      );
+      return "errorHappen";
+    }
+  }
+  await prisma.giveaway.update({
+    where: { id: giveawayId },
+    data: { winnerUserId: winner || null, ended: true },
+  });
+  cancelGiveawayScheduler(giveawayId);
+  return "successBan";
+};
 /**
  * Schedule a single giveaway
  */
@@ -50,86 +126,13 @@ export const scheduleGiveaway = (giveaway: {
   endTime: Date;
 }): void => {
   // Clear existing timeout if any
-  const existingTimeout = GiveawaySchedulerMap.get(giveaway.id);
-  if (existingTimeout) {
-    clearTimeout(existingTimeout);
-  }
+  cancelGiveawayScheduler(giveaway.id);
 
   const timeDiff = giveaway.endTime.getTime() - Date.now();
 
   const timeout = setTimeout(
     async () => {
-      const entries = await prisma.giveawayEntry.findMany({
-        where: { giveawayId: giveaway.id },
-      });
-
-      const winner = processGiveawayEnd(entries);
-      if (winner) {
-        if (DiscordClient && DiscordClient.isReady()) {
-          try {
-            const giveawayData = await prisma.giveaway.findUnique({
-              where: { id: giveaway.id },
-            });
-            if (
-              !giveawayData ||
-              !giveawayData.channelId ||
-              !giveawayData.messageId
-            ) {
-              console.error(
-                `Giveaway data not found for ID: ${giveaway.id} or missing channel/message ID`,
-              );
-              return;
-            }
-            const channel = await DiscordClient.channels.fetch(
-              giveawayData.channelId,
-            );
-            if (!channel || !channel.isTextBased()) {
-              console.error(
-                `Channel not found or not text-based for ID: ${giveawayData.channelId}`,
-              );
-              return;
-            }
-            const message = await channel.messages.fetch(
-              giveawayData.messageId,
-            );
-            if (!message) {
-              console.error(
-                `Message not found for ID: ${giveawayData.messageId}`,
-              );
-              return;
-            }
-            const giveawayEmbed = new EmbedBuilder()
-              .setTitle(t("giveawayAnnounceTitle"))
-              .setDescription(
-                t("giveawayAnnouncePrize", { prize: giveawayData.prize }),
-              )
-              .addFields({
-                name: t("giveawayAnnounceWinner"),
-                value: `<@${winner}>`,
-              })
-              .setColor("Aqua");
-            await message.edit({
-              content: t("giveawayEndedWinnerAnnouncement", {
-                winnerId: `<@${winner}>`,
-                prize: giveawayData.prize,
-              }),
-              components: [],
-              embeds: [giveawayEmbed],
-            });
-          } catch (error) {
-            console.error(
-              `Error fetching giveaway data for ID: ${giveaway.id}`,
-              error,
-            );
-            return;
-          }
-        }
-      }
-      await prisma.giveaway.update({
-        where: { id: giveaway.id },
-        data: { ended: true },
-      });
-      GiveawaySchedulerMap.delete(giveaway.id);
+      await processWinner(giveaway.id, getDiscordClient()?.channels ?? null);
     },
     Math.max(timeDiff, 0),
   ); // if timeDiff <= 0, triggers immediately
@@ -137,19 +140,10 @@ export const scheduleGiveaway = (giveaway: {
   GiveawaySchedulerMap.set(giveaway.id, timeout);
 };
 
-/**
- * Initialize scheduler on bot startup
- */
-export const initializeGiveawayScheduler = async (
-  client: Client,
-): Promise<void> => {
-  // Schedule all giveaways, including past ones
+export const initializeGiveawayScheduler = async (): Promise<void> => {
   const giveaways = await prisma.giveaway.findMany({
     where: { ended: false },
   });
-  if (client) {
-    DiscordClient = client;
-  }
 
   giveaways.forEach(scheduleGiveaway);
 };
@@ -182,13 +176,10 @@ export const addGiveaway = async (
 /**
  * Cancel a scheduled giveaway
  */
-export const cancelGiveaway = async (id: number): Promise<void> => {
+export const cancelGiveawayScheduler = async (id: number): Promise<void> => {
   const timeout = GiveawaySchedulerMap.get(id);
-  if (timeout) clearTimeout(timeout);
+  if (timeout) {
+    clearTimeout(timeout);
+  }
   GiveawaySchedulerMap.delete(id);
-
-  await prisma.giveaway.update({
-    where: { id },
-    data: { ended: true },
-  });
 };

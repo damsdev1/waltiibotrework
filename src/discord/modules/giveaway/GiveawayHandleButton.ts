@@ -1,4 +1,3 @@
-import { wizardEmbedContent } from "@/discord/modules/giveaway/GiveawayUtils.js";
 import {
   handleGiveawayJoin,
   isGiveawayJoin,
@@ -12,7 +11,6 @@ import {
   openInteractionModal,
 } from "@/discord/modules/giveaway/buttons/openInteractionModal.js";
 import { wizards } from "@/lib/Store.js";
-import { getUserLang } from "@/lib/utils.js";
 import type { Interaction } from "discord.js";
 
 export const handleGiveawayButton = async (
@@ -34,16 +32,10 @@ export const handleGiveawayButton = async (
 
   switch (true) {
     case isOpenInteractionModal(interaction, wizard.pages[wizard.pageIndex]):
-      await openInteractionModal(interaction, wizard.pages[wizard.pageIndex]);
-      break;
+      return openInteractionModal(interaction, wizard.pages[wizard.pageIndex]);
     case isWizardNavigationButton(interaction, wizard):
-      await handleWizardNavigationButtons(interaction, wizard);
-      break;
+      return handleWizardNavigationButtons(interaction, wizard);
     default:
       return; // unknown button type
   }
-
-  const userLang = getUserLang(interaction.locale);
-  // 4️⃣ If nothing else handled, update wizard message
-  await interaction.update(wizardEmbedContent(userLang, wizard));
 };

@@ -1,4 +1,7 @@
-import { giveawayAdd } from "@/discord/modules/giveaway/GiveawayAdd.js";
+import {
+  giveawayAdd,
+  giveawayRemove,
+} from "@/discord/modules/giveaway/GiveawayAdd.js";
 import { replyEphemeral } from "@/discord/utils.js";
 import {
   addUserToPending,
@@ -56,7 +59,13 @@ export const handleGiveawayJoin = async (
     },
   });
   if (existingEntry) {
-    return replyEphemeral(interaction, "giveawayAlreadyEntered", userLang);
+    try {
+      await giveawayRemove(giveaway, interaction.user.id);
+      return replyEphemeral(interaction, "next", userLang);
+    } catch (error) {
+      console.error("Error removing giveaway entry:", error);
+      return replyEphemeral(interaction, "errorHappen", userLang);
+    }
   }
   const response = await giveawayAdd(
     giveaway,

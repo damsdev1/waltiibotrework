@@ -1,3 +1,4 @@
+import { getDiscordClient } from "@/discord/modules/DiscordClientExporter.js";
 import { giveawayAdd } from "@/discord/modules/giveaway/GiveawayAdd.js";
 import { t } from "@/lib/locales/i18n.js";
 import { prisma } from "@/lib/prisma.js";
@@ -7,7 +8,6 @@ import {
   ButtonBuilder,
   ButtonStyle,
   type ButtonInteraction,
-  type Client,
 } from "discord.js";
 
 type DiscordPendingUser = {
@@ -20,7 +20,6 @@ const DiscordPendingUsersSchedulerMap = new Map<
   DiscordPendingUser,
   NodeJS.Timeout
 >();
-let DiscordClient: Client | undefined = undefined;
 
 export const AuthorizeMessageComponent = (
   userLang: string | undefined,
@@ -42,14 +41,6 @@ export const AuthorizeMessageComponent = (
     // flags: MessageFlags.Ephemeral,
     // withResponse: true,
   };
-};
-
-export const initializeDiscordPendingUsersScheduler = async (
-  client: Client,
-): Promise<void> => {
-  if (client) {
-    DiscordClient = client;
-  }
 };
 
 const deleteUser = (discordPendingUser: DiscordPendingUser): void => {
@@ -95,6 +86,7 @@ export const validatePendingUser = async (userId: string): Promise<void> => {
     console.error("Invalid pending user:", user);
     return;
   }
+  const DiscordClient = getDiscordClient();
   if (!DiscordClient || !DiscordClient.isReady()) {
     console.error("Discord client is not ready");
     return;

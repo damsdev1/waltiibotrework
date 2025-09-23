@@ -28,7 +28,7 @@ export const openInteractionModal = async (
         new TextInputBuilder()
           .setCustomId(page.modalId + "_input")
           .setLabel(page.label)
-          .setPlaceholder(page.placeholder)
+          .setPlaceholder(page.placeholder || "")
           .setStyle(TextInputStyle.Short),
       ),
     );

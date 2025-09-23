@@ -1,4 +1,5 @@
 import { getConfig } from "@/discord/ConfigManager.js";
+import { requestGiveawayMessageUpdate } from "@/discord/modules/giveaway/GiveawayMessageUpdaterScheduler.js";
 import { isSubscribersRolesConfigured } from "@/discord/modules/giveaway/GiveawayUtils.js";
 import { getDiscordConnections } from "@/lib/discord/DiscordAPI.js";
 import { handleDiscordConnectionsTx } from "@/lib/discord/discordConnectionManager.js";
@@ -72,6 +73,11 @@ export type GiveawayAddResponse = {
   type: "reply" | "authorize";
 };
 
+export type GiveawayRemoveResponse = {
+  success: boolean;
+  messageKey: TranslationKeys;
+};
+
 const giveawayResponse = (
   success: boolean,
   messageKey: TranslationKeys,
@@ -88,6 +94,18 @@ const giveawayNeedsAuthorize = (): GiveawayAddResponse => {
   );
 };
 
+export const giveawayRemove = async (
+  giveaway: Giveaway,
+  userId: string,
+): Promise<void> => {
+  await prisma.giveawayEntry.delete({
+    where: {
+      GiveawayUser: { giveawayId: giveaway.id, userId: userId },
+    },
+  });
+  await requestGiveawayMessageUpdate(giveaway.id);
+};
+
 export const giveawayAdd = async (
   giveaway: Giveaway,
   userId: string,
@@ -98,6 +116,7 @@ export const giveawayAdd = async (
     await prisma.giveawayEntry.create({
       data: { giveawayId: giveaway.id, userId: userId },
     });
+    await requestGiveawayMessageUpdate(giveaway.id);
     return giveawayResponse(true, "giveawayEnteredSuccessfully");
   }
 
@@ -150,6 +169,7 @@ export const giveawayAdd = async (
             giveawayEntry,
           );
         });
+        await requestGiveawayMessageUpdate(giveaway.id);
         return giveawayResponse(true, "giveawayEnteredSuccessfully");
       } catch (error) {
         console.error("Error fetching Discord connections:", error);

@@ -1,8 +1,8 @@
+import { wizardEmbedContent } from "@/discord/modules/giveaway/GiveawayUtils.js";
 import { replyEphemeral } from "@/discord/utils.js";
 import type { GiveawayWizard } from "@/lib/types/giveaway.js";
-import { getUserLang } from "@/lib/utils.js";
-import { MessageFlags, type ModalSubmitInteraction } from "discord.js";
 import { buildWizardDate } from "@/lib/validators/giveaway.js";
+import { MessageFlags, type ModalSubmitInteraction } from "discord.js";
 
 export const isTimeModal = (interaction: ModalSubmitInteraction): boolean => {
   return interaction.customId === "modal_time";
@@ -11,6 +11,7 @@ export const isTimeModal = (interaction: ModalSubmitInteraction): boolean => {
 export const handleTimeModal = async (
   interaction: ModalSubmitInteraction,
   wizard: GiveawayWizard,
+  userLang: string,
 ): Promise<void> => {
   const timeVal = interaction.fields.getTextInputValue("modal_time_input");
   const [h, m] = timeVal.split(":").map(Number);
@@ -35,10 +36,12 @@ export const handleTimeModal = async (
     return replyEphemeral(
       interaction,
       "giveawayWizardHandleDatePast",
-      getUserLang(interaction.locale),
+      userLang,
     );
   }
 
   wizard.data.time = timeVal;
   wizard.pageIndex = Math.min(wizard.pages.length - 1, wizard.pageIndex + 1);
+  await interaction.deferUpdate();
+  await interaction.editReply(wizardEmbedContent(userLang, wizard));
 };

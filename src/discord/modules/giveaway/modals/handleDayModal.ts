@@ -1,3 +1,4 @@
+import { wizardEmbedContent } from "@/discord/modules/giveaway/GiveawayUtils.js";
 import { replyEphemeral } from "@/discord/utils.js";
 import type { GiveawayWizard } from "@/lib/types/giveaway.js";
 import { getUserLang } from "@/lib/utils.js";
@@ -10,6 +11,7 @@ export const isDayModal = (interaction: ModalSubmitInteraction): boolean => {
 export const handleDayModal = async (
   interaction: ModalSubmitInteraction,
   wizard: GiveawayWizard,
+  userLang: string,
 ): Promise<void> => {
   const year = Number(wizard.data.year);
   const month = Number(wizard.data.month);
@@ -40,4 +42,6 @@ export const handleDayModal = async (
 
   wizard.data.day = String(day).padStart(2, "0");
   wizard.pageIndex = Math.min(wizard.pages.length - 1, wizard.pageIndex + 1);
+  await interaction.deferUpdate();
+  await interaction.editReply(wizardEmbedContent(userLang, wizard));
 };

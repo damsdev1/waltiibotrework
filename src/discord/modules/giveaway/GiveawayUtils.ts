@@ -147,3 +147,56 @@ export const wizardEmbedContent = (
     ),
   };
 };
+
+const createGiveawayDescription = (
+  prize: string,
+  entriesNumber: number,
+  endTime: Date,
+): string => {
+  return `${t("giveawayAnnouncePrize", { prize })}\n\n${t("giveawayAnnounceEnds")}: <t:${Math.floor(
+    endTime.getTime() / 1000,
+  )}:F>\nParticipants: ${entriesNumber}`;
+};
+
+const createGiveawayDescriptionFinished = (
+  prize: string,
+  entriesNumber: number,
+  winnersIds: string[],
+  endTime: Date,
+): string => {
+  const winners =
+    winnersIds.length > 0
+      ? winnersIds.map((id) => `<@${id}>`).join(", ")
+      : "Aucun gagnant";
+  return `${t("giveawayAnnouncePrize", { prize })}\n\n${t("giveawayAnnounceEnds")}: <t:${Math.floor(
+    endTime.getTime() / 1000,
+  )}:F>\nParticipants: ${entriesNumber}\nGagnants: ${winners}`;
+};
+
+export const createGiveawayEmbed = (
+  prize: string,
+  entriesNumber: number,
+  endTime: Date,
+): EmbedBuilder =>
+  new EmbedBuilder()
+    .setTitle(t("giveawayAnnounceTitle"))
+    .setDescription(createGiveawayDescription(prize, entriesNumber, endTime))
+    .setColor("Purple");
+
+export const createGiveawayEmbedFinished = (
+  prize: string,
+  entriesNumber: number,
+  winnersIds: string[],
+  endTime: Date,
+): EmbedBuilder =>
+  new EmbedBuilder()
+    .setTitle(t("giveawayAnnounceTitle"))
+    .setDescription(
+      createGiveawayDescriptionFinished(
+        prize,
+        entriesNumber,
+        winnersIds,
+        endTime,
+      ),
+    )
+    .setColor("Green");
