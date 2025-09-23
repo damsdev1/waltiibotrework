@@ -34,7 +34,15 @@ CREATE TABLE "Giveaway" (
     "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" DATETIME NOT NULL,
     "subOnly" BOOLEAN NOT NULL DEFAULT false,
-    "winnerUserId" TEXT
+    "winnerCount" INTEGER NOT NULL DEFAULT 1
+);
+
+-- CreateTable
+CREATE TABLE "GiveawayWinner" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "giveawayId" INTEGER NOT NULL,
+    "userId" TEXT NOT NULL,
+    CONSTRAINT "GiveawayWinner_giveawayId_fkey" FOREIGN KEY ("giveawayId") REFERENCES "Giveaway" ("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
 
 -- CreateTable
@@ -54,7 +62,7 @@ CREATE UNIQUE INDEX "Config_key_key" ON "Config"("key");
 CREATE UNIQUE INDEX "User_id_key" ON "User"("id");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "Connections_platform_platformId_userId_giveawayEntryId_key" ON "Connections"("platform", "platformId", "userId", "giveawayEntryId");
+CREATE UNIQUE INDEX "Connections_platform_platformId_giveawayEntryId_key" ON "Connections"("platform", "platformId", "giveawayEntryId");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "Giveaway_interactionId_key" ON "Giveaway"("interactionId");
