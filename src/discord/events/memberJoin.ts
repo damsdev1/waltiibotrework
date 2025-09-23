@@ -27,7 +27,6 @@ const sendMessageJoin = async (member: GuildMember): Promise<void> => {
       },
     ],
     timestamp: new Date().toISOString(),
-    footer: { text: `Développé par <@1123262077876850698>` },
   };
 
   await sendEmbedToConfiguredChannel(member.guild, "logsJoinChannel", {
@@ -78,9 +77,6 @@ export const execute = async (member: GuildMember): Promise<void> => {
           inline: false,
         },
       ],
-      footer: {
-        text: `Développé par <@1123262077876850698>`,
-      },
     };
     try {
       await member.send({ embeds: [recentUserEmbed] });

@@ -29,7 +29,6 @@ const sendMessageLeave = async (
         },
       ],
       timestamp: new Date(member.user.createdAt.getTime()).toISOString(),
-      footer: { text: `Développé par <@1123262077876850698>` },
     };
     await sendEmbedToConfiguredChannel(member.guild, "logsLeaveChannel", {
       embeds: [leaveEmbed],
@@ -54,8 +53,7 @@ const sendMessageLeave = async (
         inline: false,
       },
     )
-    .setTimestamp(new Date(member.user.createdAt.getTime()))
-    .setFooter({ text: `Développé par <@1123262077876850698>` });
+    .setTimestamp(new Date(member.user.createdAt.getTime()));
 
   if (bannedUser) {
     leaveEmbedBuilder.addFields({
