@@ -1,3 +1,4 @@
+import "dotenv/config";
 import * as fs from "fs/promises";
 import * as path from "path";
 
@@ -7,7 +8,7 @@ export interface BotConfig {
 }
 
 const basePath = process.cwd();
-const filePath = path.join(basePath, "prisma", "db", "config.json");
+const filePath = path.join(basePath, process.env.CONFIG_FILE_PATH || "db/config.json");
 
 let cache: BotConfig = {};
 let writeQueue: Promise<void> = Promise.resolve(); // queue for writes
@@ -19,7 +20,8 @@ export async function loadConfig(): Promise<void> {
     cache = JSON.parse(raw) as BotConfig;
   } catch (err) {
     console.error("Failed to load config, starting with empty config.", err);
-    cache = {};
+    await fs.mkdir(path.dirname(filePath), { recursive: true });
+    await fs.writeFile(filePath, JSON.stringify(cache, null, 2), "utf8");
   }
 }
 
@@ -40,6 +42,7 @@ export async function setConfig<T = unknown>(key: keyof BotConfig, value: T): Pr
   // Chain the write onto the existing queue
   writeQueue = writeQueue.then(async () => {
     try {
+      await fs.mkdir(path.dirname(filePath), { recursive: true });
       await fs.writeFile(filePath, JSON.stringify(cache, null, 2), "utf8");
     } catch (err) {
       console.error("Failed to write config to file", err);
