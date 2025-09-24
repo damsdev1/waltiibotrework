@@ -149,11 +149,17 @@ export const data = new SlashCommandBuilder()
   .addSubcommand((subcommand) =>
     subcommand
       .setName("edit")
-      .setDescription("cvaca")
+      .setDescription(t("giveawaySlashCommandEdit"))
+      .setDescriptionLocalizations(
+        getAllLocalizedTranslations("giveawaySlashCommandEdit"),
+      )
       .addStringOption((option) =>
         option
           .setName("id")
-          .setDescription("caca")
+          .setDescription(t("giveawaySlashCommandEditId"))
+          .setDescriptionLocalizations(
+            getAllLocalizedTranslations("giveawaySlashCommandEditId"),
+          )
           .setRequired(true)
           .setAutocomplete(true),
       ),
@@ -162,11 +168,17 @@ export const data = new SlashCommandBuilder()
   .addSubcommand((subcommand) =>
     subcommand
       .setName("roll")
-      .setDescription("cvaca")
+      .setDescription(t("giveawaySlashCommandRoll"))
+      .setDescriptionLocalizations(
+        getAllLocalizedTranslations("giveawaySlashCommandRoll"),
+      )
       .addStringOption((option) =>
         option
           .setName("id")
-          .setDescription("caca")
+          .setDescription(t("giveawaySlashCommandRollId"))
+          .setDescriptionLocalizations(
+            getAllLocalizedTranslations("giveawaySlashCommandRollId"),
+          )
           .setRequired(true)
           .setAutocomplete(true),
       ),
@@ -174,11 +186,17 @@ export const data = new SlashCommandBuilder()
   .addSubcommand((subcommand) =>
     subcommand
       .setName("reroll")
-      .setDescription("cvaca")
+      .setDescription(t("giveawaySlashCommandReroll"))
+      .setDescriptionLocalizations(
+        getAllLocalizedTranslations("giveawaySlashCommandReroll"),
+      )
       .addStringOption((option) =>
         option
           .setName("id")
-          .setDescription("caca")
+          .setDescription(t("giveawaySlashCommandRerollId"))
+          .setDescriptionLocalizations(
+            getAllLocalizedTranslations("giveawaySlashCommandRerollId"),
+          )
           .setRequired(true)
           .setAutocomplete(true),
       ),
@@ -186,11 +204,17 @@ export const data = new SlashCommandBuilder()
   .addSubcommand((subcommand) =>
     subcommand
       .setName("resend")
-      .setDescription("cvaca")
+      .setDescription(t("giveawaySlashCommandResend"))
+      .setDescriptionLocalizations(
+        getAllLocalizedTranslations("giveawaySlashCommandResend"),
+      )
       .addStringOption((option) =>
         option
           .setName("id")
-          .setDescription("caca")
+          .setDescription(t("giveawaySlashCommandResendId"))
+          .setDescriptionLocalizations(
+            getAllLocalizedTranslations("giveawaySlashCommandResendId"),
+          )
           .setRequired(true)
           .setAutocomplete(true),
       ),
