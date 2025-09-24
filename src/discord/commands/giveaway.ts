@@ -89,7 +89,6 @@ const getPages = (
   },
   { type: "save", key: "save", label: t(saveLabelKey, { lng: userLang }) },
 ];
-// TODO: /roll, /reroll, /edit
 export const data = new SlashCommandBuilder()
   .setName("giveaway")
   .setDescription(t("giveawaySlashCommand"))
@@ -305,11 +304,11 @@ async function handleDelete(interaction: ChatInputCommandInteraction, userLang: 
 async function handleRoll(
   interaction: ChatInputCommandInteraction,
   userLang: string,
-  reroll: boolean = false,
+  roll: boolean = true,
 ): Promise<void> {
   const giveawayId = interaction.options.getString("id", true);
   try {
-    const result = await processWinners(parseInt(giveawayId, 10), interaction.client.channels ?? null, reroll);
+    const result = await processWinners(parseInt(giveawayId, 10), interaction.client.channels ?? null, roll);
     return replyEphemeral(interaction, result, userLang);
   } catch (error) {
     console.error("Error fetching giveaway:", error);
@@ -396,7 +395,7 @@ export const execute = async (interaction: ChatInputCommandInteraction): Promise
     case "roll":
       return handleRoll(interaction, userLang);
     case "reroll":
-      return handleRoll(interaction, userLang, true);
+      return handleRoll(interaction, userLang, false);
     case "resend":
       return handleResend(interaction, userLang);
   }

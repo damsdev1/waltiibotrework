@@ -59,30 +59,31 @@ export const processWinners = async (
   channelManager: ChannelManager | null,
   checkEnded: boolean = true,
 ): Promise<TranslationKeys> => {
-  const entries = await prisma.giveawayEntry.findMany({
-    where: { giveawayId },
-  });
-  const winners = processGiveawayEnd(entries);
-  await prisma.giveaway.update({
-    where: { id: giveawayId },
-    data: { ended: true },
-  });
-  await prisma.giveawayWinner.deleteMany({
-    where: { giveawayId },
-  });
-  await prisma.giveawayWinner.createMany({
-    data: winners.map((userId) => ({
-      giveawayId,
-      userId,
-    })),
-  });
   try {
     const giveawayData = await prisma.giveaway.findUnique({
       where: { id: giveawayId },
     });
+    console.log(checkEnded);
     if (checkEnded && giveawayData?.ended) {
       return "giveawayAlreadyEnded";
     }
+    const entries = await prisma.giveawayEntry.findMany({
+      where: { giveawayId },
+    });
+    const winners = processGiveawayEnd(entries);
+    await prisma.giveaway.update({
+      where: { id: giveawayId },
+      data: { ended: true },
+    });
+    await prisma.giveawayWinner.deleteMany({
+      where: { giveawayId },
+    });
+    await prisma.giveawayWinner.createMany({
+      data: winners.map((userId) => ({
+        giveawayId,
+        userId,
+      })),
+    });
     if (!giveawayData || !giveawayData.channelId || !giveawayData.messageId) {
       console.error(`Giveaway data not found for ID: ${giveawayId} or missing channel/message ID`);
       return "giveawayNotFound";
@@ -104,6 +105,7 @@ export const processWinners = async (
         components: [],
         embeds: [createGiveawayEmbedFinished(giveawayData.prize, entries.length, winners, giveawayData.endTime)],
       });
+      return "giveawayCreatedSuccessfully";
     } catch (error) {
       console.error(`Error fetching channel or message for giveaway ID: ${giveawayId}`, error);
       return "giveawayNotFound";
@@ -112,18 +114,17 @@ export const processWinners = async (
     console.error(`Error fetching giveaway data for ID: ${giveawayId}`, error);
     return "errorHappen";
   }
-
-  cancelGiveawayScheduler(giveawayId);
-  return "successBan";
 };
 /**
  * Schedule a single giveaway
  */
 export const scheduleGiveaway = (giveaway: { id: number; endTime: Date }): void => {
+  console.log("trigger scheduleGiveaway for", giveaway.id);
   // Clear existing timeout if any
   cancelGiveawayScheduler(giveaway.id);
 
   const timeDiff = giveaway.endTime.getTime() - Date.now();
+  console.log(timeDiff);
 
   const timeout = setTimeout(
     async () => {
@@ -139,7 +140,6 @@ export const initializeGiveawayScheduler = async (): Promise<void> => {
   const giveaways = await prisma.giveaway.findMany({
     where: { ended: false },
   });
-
   giveaways.forEach(scheduleGiveaway);
 };
 
