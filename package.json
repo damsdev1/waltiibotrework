@@ -10,7 +10,8 @@
     "dev": "tsx src/index.ts",
     "build": "tsc && tsc-alias --resolve-full-paths && cpx \"src/config/locales/**/*.json\" dist/config/locales && cpx \"src/http/public/**/*\" dist/http/public",
     "prisma:generate": "prisma generate",
-    "serve:prod": "npm run prisma:generate && npm run build && node dist/index.js",
+    "prisma:deploy": "prisma migrate deploy",
+    "serve:prod": "npm run prisma:generate && npm run prisma:deploy && npm run build && node dist/index.js",
     "prepare": "husky"
   },
   "keywords": [],
