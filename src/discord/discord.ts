@@ -42,7 +42,7 @@ async function loadRest(commands: unknown[]): Promise<void> {
       body: commands,
     })) as unknown[];
 
-    console.info(`Successfully reloaded ${data.length} application (/) commands.`);
+    console.info(`Successfully reloaded ${data.length} application (/) commands. Well done John !`);
   } catch (error) {
     console.error(`Failed to reload application (/) commands: ${error}`);
   }
