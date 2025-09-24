@@ -3,18 +3,11 @@ import { replyEphemeral } from "@/discord/utils.js";
 import { getAllLocalizedTranslations, t } from "@/lib/locales/i18n.js";
 import type { TranslationKeys } from "@/lib/types/i18n.js";
 import { getUserLang } from "@/lib/utils.js";
-import type {
-  ChatInputCommandInteraction,
-  SlashCommandRoleOption,
-  SlashCommandSubcommandBuilder,
-} from "discord.js";
+import type { ChatInputCommandInteraction, SlashCommandRoleOption, SlashCommandSubcommandBuilder } from "discord.js";
 import { PermissionFlagsBits, SlashCommandBuilder } from "discord.js";
 
 /* ---------------------- Role Config Mapping ---------------------- */
-const roleConfigMap: Record<
-  string,
-  { configKey: string; successKey: TranslationKeys; descKey: TranslationKeys }
-> = {
+const roleConfigMap: Record<string, { configKey: string; successKey: TranslationKeys; descKey: TranslationKeys }> = {
   notif: {
     configKey: "roleNotif",
     successKey: "roleManagerNotifRoleDefined",
@@ -64,9 +57,7 @@ export const data = ((): SlashCommandBuilder => {
           opt
             .setName("role")
             .setDescription(t("roleManagerSlashCommandRoleOption"))
-            .setDescriptionLocalizations(
-              getAllLocalizedTranslations("roleManagerSlashCommandRoleOption"),
-            )
+            .setDescriptionLocalizations(getAllLocalizedTranslations("roleManagerSlashCommandRoleOption"))
             .setRequired(true),
         ),
     );
@@ -76,9 +67,7 @@ export const data = ((): SlashCommandBuilder => {
 })();
 
 /* ---------------------- Execute Handler ---------------------- */
-export async function execute(
-  interaction: ChatInputCommandInteraction,
-): Promise<void> {
+export async function execute(interaction: ChatInputCommandInteraction): Promise<void> {
   const lng = getUserLang(interaction.locale);
 
   if (!interaction.guild) {

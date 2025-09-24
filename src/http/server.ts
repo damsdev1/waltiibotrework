@@ -18,9 +18,7 @@ fastify.register(RoutesEventSubTwitch);
 const startWebServer = async (): Promise<void> => {
   try {
     await fastify.listen({ host: "::", port: 3000 });
-    console.info(
-      `Server is running on ${process.env.SERVER_URL || "http://localhost:3000"}`,
-    );
+    console.info(`Server is running on ${process.env.SERVER_URL || "http://localhost:3000"}`);
   } catch (err) {
     console.error(err);
     process.exit(1);

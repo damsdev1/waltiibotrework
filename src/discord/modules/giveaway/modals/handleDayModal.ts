@@ -28,16 +28,8 @@ export const handleDayModal = async (
   }
 
   const today = new Date();
-  if (
-    year === today.getFullYear() &&
-    month === today.getMonth() + 1 &&
-    day < today.getDate()
-  ) {
-    return replyEphemeral(
-      interaction,
-      "giveawayWizardHandleDatePast",
-      getUserLang(interaction.locale),
-    );
+  if (year === today.getFullYear() && month === today.getMonth() + 1 && day < today.getDate()) {
+    return replyEphemeral(interaction, "giveawayWizardHandleDatePast", getUserLang(interaction.locale));
   }
 
   wizard.data.day = String(day).padStart(2, "0");

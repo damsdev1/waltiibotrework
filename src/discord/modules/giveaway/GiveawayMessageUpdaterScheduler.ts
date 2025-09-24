@@ -4,10 +4,7 @@ import { prisma } from "@/lib/prisma.js";
 
 type EmptyTimeout = { type: "check"; endDate: Date; timeout: NodeJS.Timeout };
 type NormalTimeout = { type: "normal"; endDate: Date; timeout: NodeJS.Timeout };
-const giveawayMessageUpdaterMap = new Map<
-  number,
-  EmptyTimeout | NormalTimeout
->();
+const giveawayMessageUpdaterMap = new Map<number, EmptyTimeout | NormalTimeout>();
 
 const giveawayUpdate = async (giveawayId: number): Promise<void> => {
   const giveaway = await prisma.giveaway.findFirst({
@@ -35,44 +32,24 @@ const giveawayUpdate = async (giveawayId: number): Promise<void> => {
     if (message) {
       await message.edit({
         components: message.components.map((row) => row.toJSON()),
-        embeds: [
-          createGiveawayEmbed(
-            giveaway.prize,
-            entriesNumber,
-            giveaway.endTime,
-            giveaway.winnerCount,
-          ),
-        ],
+        embeds: [createGiveawayEmbed(giveaway.prize, entriesNumber, giveaway.endTime, giveaway.winnerCount)],
       });
     }
   } catch (error) {
-    console.error(
-      `Failed to update giveaway message: ${giveaway.messageId}`,
-      error,
-    );
+    console.error(`Failed to update giveaway message: ${giveaway.messageId}`, error);
   }
 };
 
 // randomTimeout between 1 and 5 minutes for preventing too many updates at same time if users abuse many giveaways
-const randomTimeout = (): number =>
-  Math.floor(Math.random() * (5 * 60 * 1000 - 1 * 60 * 1000 + 1)) +
-  1 * 60 * 1000;
-export const requestGiveawayMessageUpdate = async (
-  giveawayId: number,
-): Promise<void> => {
+const randomTimeout = (): number => Math.floor(Math.random() * (5 * 60 * 1000 - 1 * 60 * 1000 + 1)) + 1 * 60 * 1000;
+export const requestGiveawayMessageUpdate = async (giveawayId: number): Promise<void> => {
   if (giveawayMessageUpdaterMap.has(giveawayId)) {
     const existing = giveawayMessageUpdaterMap.get(giveawayId);
     if (existing?.type === "check") {
       const date = existing.endDate;
       const remaining = date.getTime() - Date.now();
       if (remaining > 0) {
-        console.log(
-          "Extending existing check timeout for giveaway",
-          giveawayId,
-          "by",
-          remaining,
-          "ms",
-        );
+        console.log("Extending existing check timeout for giveaway", giveawayId, "by", remaining, "ms");
         giveawayMessageUpdaterMap.delete(giveawayId);
         giveawayMessageUpdaterMap.set(giveawayId, {
           type: "normal",

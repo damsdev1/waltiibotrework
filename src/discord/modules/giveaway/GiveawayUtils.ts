@@ -2,13 +2,7 @@ import { getConfig } from "@/discord/ConfigManager.js";
 import { t } from "@/lib/locales/i18n.js";
 import type { GiveawayWizard } from "@/lib/types/giveaway.js";
 import type { AnyComponentBuilder, BaseMessageOptions } from "discord.js";
-import {
-  ActionRowBuilder,
-  ButtonBuilder,
-  ButtonStyle,
-  EmbedBuilder,
-  StringSelectMenuBuilder,
-} from "discord.js";
+import { ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, StringSelectMenuBuilder } from "discord.js";
 
 export const isSubscribersRolesConfigured = (): boolean => {
   const subscriberRoleId = getConfig<string>("subscriberRoleId");
@@ -21,10 +15,7 @@ export const isSubscribersRolesConfigured = (): boolean => {
 // Centralized wizard navigation button IDs
 export const WIZARD_NAV_IDS = ["back", "next", "cancel", "save"] as const;
 
-function generateWizardEmbed(
-  wizard: Partial<GiveawayWizard> = {},
-  userLang: string = "fr",
-): EmbedBuilder {
+function generateWizardEmbed(wizard: Partial<GiveawayWizard> = {}, userLang: string = "fr"): EmbedBuilder {
   const d: Partial<GiveawayWizard["data"]> = wizard.data || {};
   return new EmbedBuilder()
     .setTitle(t("giveawaySetup", { lng: userLang }))
@@ -37,9 +28,7 @@ function generateWizardEmbed(
       },
       {
         name: t("giveawayWizardWinnerCount", { lng: userLang }),
-        value: d.winnerCount
-          ? String(d.winnerCount)
-          : t("giveawayWizardNotSet", { lng: userLang }),
+        value: d.winnerCount ? String(d.winnerCount) : t("giveawayWizardNotSet", { lng: userLang }),
         inline: true,
       },
       {
@@ -80,10 +69,7 @@ function generatePageComponents(
   if (page.type === "save") {
     rows.push(
       new ActionRowBuilder().addComponents(
-        new ButtonBuilder()
-          .setCustomId(page.type)
-          .setLabel(page.label)
-          .setStyle(ButtonStyle.Success),
+        new ButtonBuilder().setCustomId(page.type).setLabel(page.label).setStyle(ButtonStyle.Success),
       ),
     );
   }
@@ -93,23 +79,16 @@ function generatePageComponents(
     if (btnId) {
       rows.push(
         new ActionRowBuilder().addComponents(
-          new ButtonBuilder()
-            .setCustomId(btnId)
-            .setLabel(page.label)
-            .setStyle(ButtonStyle.Primary),
+          new ButtonBuilder().setCustomId(btnId).setLabel(page.label).setStyle(ButtonStyle.Primary),
         ),
       );
     }
   }
 
   if (page.type === "select") {
-    let select = new StringSelectMenuBuilder()
-      .setCustomId(`select_${page.key}`)
-      .setPlaceholder(`${page.label}`);
+    let select = new StringSelectMenuBuilder().setCustomId(`select_${page.key}`).setPlaceholder(`${page.label}`);
     if (page.options) {
-      select = select.addOptions(
-        page.options.map((opt: string) => ({ label: opt, value: opt })),
-      );
+      select = select.addOptions(page.options.map((opt: string) => ({ label: opt, value: opt })));
     }
     rows.push(new ActionRowBuilder().addComponents(select));
   }
@@ -133,25 +112,17 @@ function generatePageComponents(
             !wizard.data?.[page.key as keyof typeof wizard.data] ||
             wizard.data?.[page.key as keyof typeof wizard.data] === "",
         ),
-      new ButtonBuilder()
-        .setCustomId("cancel")
-        .setLabel("❌ Cancel")
-        .setStyle(ButtonStyle.Danger),
+      new ButtonBuilder().setCustomId("cancel").setLabel("❌ Cancel").setStyle(ButtonStyle.Danger),
     ),
   );
 
   return rows;
 }
-export const wizardEmbedContent = (
-  userLang: string,
-  wizard: GiveawayWizard,
-): BaseMessageOptions => {
+export const wizardEmbedContent = (userLang: string, wizard: GiveawayWizard): BaseMessageOptions => {
   return {
     content: t("giveawaySetup", { lng: userLang }),
     embeds: [generateWizardEmbed(wizard, userLang)],
-    components: generatePageComponents(wizard, userLang).map((row) =>
-      row.toJSON(),
-    ),
+    components: generatePageComponents(wizard, userLang).map((row) => row.toJSON()),
   };
 };
 
@@ -172,10 +143,7 @@ const createGiveawayDescriptionFinished = (
   winnersIds: string[],
   endTime: Date,
 ): string => {
-  const winners =
-    winnersIds.length > 0
-      ? winnersIds.map((id) => `<@${id}>`).join(", ")
-      : "Aucun gagnant";
+  const winners = winnersIds.length > 0 ? winnersIds.map((id) => `<@${id}>`).join(", ") : "Aucun gagnant";
   return `${t("giveawayAnnouncePrize", { prize })}\n\n${t("giveawayAnnounceEnds")}: <t:${Math.floor(
     endTime.getTime() / 1000,
   )}:F>\nParticipants: **${entriesNumber}**\nGagnants: **${winners}**`;
@@ -189,9 +157,7 @@ export const createGiveawayEmbed = (
 ): EmbedBuilder =>
   new EmbedBuilder()
     .setTitle(t("giveawayAnnounceTitle"))
-    .setDescription(
-      createGiveawayDescription(prize, entriesNumber, endTime, winnerCount),
-    )
+    .setDescription(createGiveawayDescription(prize, entriesNumber, endTime, winnerCount))
     .setColor("Purple");
 
 export const createGiveawayEmbedFinished = (
@@ -202,12 +168,5 @@ export const createGiveawayEmbedFinished = (
 ): EmbedBuilder =>
   new EmbedBuilder()
     .setTitle(t("giveawayAnnounceTitle"))
-    .setDescription(
-      createGiveawayDescriptionFinished(
-        prize,
-        entriesNumber,
-        winnersIds,
-        endTime,
-      ),
-    )
+    .setDescription(createGiveawayDescriptionFinished(prize, entriesNumber, winnersIds, endTime))
     .setColor("Green");

@@ -1,19 +1,9 @@
 import type { GiveawayWizardPageModal } from "@/lib/types/giveaway.js";
 import type { ButtonInteraction } from "discord.js";
-import {
-  ActionRowBuilder,
-  ModalBuilder,
-  TextInputBuilder,
-  TextInputStyle,
-} from "discord.js";
+import { ActionRowBuilder, ModalBuilder, TextInputBuilder, TextInputStyle } from "discord.js";
 
-export const isOpenInteractionModal = (
-  interaction: ButtonInteraction,
-  page: GiveawayWizardPageModal,
-): boolean => {
-  return (
-    !!page && page.type === "modal" && interaction.customId === page.modalId
-  );
+export const isOpenInteractionModal = (interaction: ButtonInteraction, page: GiveawayWizardPageModal): boolean => {
+  return !!page && page.type === "modal" && interaction.customId === page.modalId;
 };
 
 export const openInteractionModal = async (

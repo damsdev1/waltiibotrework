@@ -1,22 +1,12 @@
-import {
-  giveawayAdd,
-  giveawayRemove,
-} from "@/discord/modules/giveaway/GiveawayAdd.js";
+import { giveawayAdd, giveawayRemove } from "@/discord/modules/giveaway/GiveawayAdd.js";
 import { replyEphemeral } from "@/discord/utils.js";
-import {
-  addUserToPending,
-  AuthorizeMessageComponent,
-} from "@/lib/discord/DiscordPendingAuthorizedUsers.js";
+import { addUserToPending, AuthorizeMessageComponent } from "@/lib/discord/DiscordPendingAuthorizedUsers.js";
 import { prisma } from "@/lib/prisma.js";
 import { getUserLang } from "@/lib/utils.js";
 import { MessageFlags, type ButtonInteraction } from "discord.js";
 import type { Giveaway } from "../../../../../generated/prisma/index.js";
 
-const handleAuthorize = async (
-  userLang: string,
-  interaction: ButtonInteraction,
-  giveaway: Giveaway,
-): Promise<void> => {
+const handleAuthorize = async (userLang: string, interaction: ButtonInteraction, giveaway: Giveaway): Promise<void> => {
   const authorizeComponent = AuthorizeMessageComponent(userLang);
   await interaction.reply({
     ...authorizeComponent,
@@ -34,9 +24,7 @@ const handleAuthorize = async (
 export const isGiveawayJoin = (interaction: ButtonInteraction): boolean => {
   return interaction.customId.startsWith("giveaway_join_");
 };
-export const handleGiveawayJoin = async (
-  interaction: ButtonInteraction,
-): Promise<void> => {
+export const handleGiveawayJoin = async (interaction: ButtonInteraction): Promise<void> => {
   const userLang = getUserLang(interaction.locale);
 
   const interactionId = interaction.customId.replace("giveaway_join_", "");
@@ -65,12 +53,7 @@ export const handleGiveawayJoin = async (
       return replyEphemeral(interaction, "errorHappen", userLang);
     }
   }
-  const response = await giveawayAdd(
-    giveaway,
-    interaction.user.id,
-    interaction,
-    interaction.client,
-  );
+  const response = await giveawayAdd(giveaway, interaction.user.id, interaction, interaction.client);
   switch (response.type) {
     case "reply":
       return replyEphemeral(interaction, response.messageKey, userLang);

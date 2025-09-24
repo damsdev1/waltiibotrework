@@ -1,17 +1,11 @@
-import {
-  formatTimeJoinLeaveMessage,
-  sendEmbedToConfiguredChannel,
-} from "@/discord/utils.js";
+import { formatTimeJoinLeaveMessage, sendEmbedToConfiguredChannel } from "@/discord/utils.js";
 import type { GuildMember } from "discord.js";
 import { EmbedBuilder, Events } from "discord.js";
 
 export const name = Events.GuildMemberRemove;
 export const once = false;
 
-const sendMessageLeave = async (
-  member: GuildMember,
-  createdTimeAgo: number,
-): Promise<void> => {
+const sendMessageLeave = async (member: GuildMember, createdTimeAgo: number): Promise<void> => {
   const bannedUser = await member.guild.bans.fetch(member.id).catch(() => null);
 
   if (createdTimeAgo <= 4) {
@@ -69,9 +63,6 @@ const sendMessageLeave = async (
 };
 
 export const execute = async (member: GuildMember): Promise<void> => {
-  const createdTimeAgo = Math.ceil(
-    (new Date().getTime() - member.user.createdAt.getTime()) /
-      (1000 * 3600 * 24),
-  );
+  const createdTimeAgo = Math.ceil((new Date().getTime() - member.user.createdAt.getTime()) / (1000 * 3600 * 24));
   await sendMessageLeave(member, createdTimeAgo);
 };

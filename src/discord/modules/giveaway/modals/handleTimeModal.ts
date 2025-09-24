@@ -33,11 +33,7 @@ export const handleTimeModal = async (
   );
 
   if (!chosenDate || chosenDate < new Date()) {
-    return replyEphemeral(
-      interaction,
-      "giveawayWizardHandleDatePast",
-      userLang,
-    );
+    return replyEphemeral(interaction, "giveawayWizardHandleDatePast", userLang);
   }
 
   wizard.data.time = timeVal;

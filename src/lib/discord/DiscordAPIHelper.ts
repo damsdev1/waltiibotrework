@@ -6,9 +6,7 @@ import { request } from "urllib";
 
 type FetchResult = { status: number } & Record<string, unknown>;
 
-async function refreshDiscordToken(
-  refreshToken: string,
-): Promise<UserWithoutId> {
+async function refreshDiscordToken(refreshToken: string): Promise<UserWithoutId> {
   const response = await request("https://discord.com/api/oauth2/token", {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },

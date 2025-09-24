@@ -1,22 +1,11 @@
-import {
-  handleDayModal,
-  isDayModal,
-} from "@/discord/modules/giveaway/modals/handleDayModal.js";
-import {
-  handlePrizeModal,
-  isPrizeModal,
-} from "@/discord/modules/giveaway/modals/handlePrizeModal.js";
-import {
-  handleTimeModal,
-  isTimeModal,
-} from "@/discord/modules/giveaway/modals/handleTimeModal.js";
+import { handleDayModal, isDayModal } from "@/discord/modules/giveaway/modals/handleDayModal.js";
+import { handlePrizeModal, isPrizeModal } from "@/discord/modules/giveaway/modals/handlePrizeModal.js";
+import { handleTimeModal, isTimeModal } from "@/discord/modules/giveaway/modals/handleTimeModal.js";
 import { wizards } from "@/lib/Store.js";
 import { getUserLang } from "@/lib/utils.js";
 import type { Interaction } from "discord.js";
 
-export const handleModalSubmit = async (
-  interaction: Interaction,
-): Promise<void> => {
+export const handleModalSubmit = async (interaction: Interaction): Promise<void> => {
   if (!interaction.isModalSubmit()) {
     return;
   }

@@ -28,10 +28,7 @@ export async function initI18n(): Promise<void> {
 
 // ----- Typed wrapper -----
 
-export function t<K extends TranslationKeys>(
-  key: K,
-  params?: TranslationParams[K] & TOptions,
-): string {
+export function t<K extends TranslationKeys>(key: K, params?: TranslationParams[K] & TOptions): string {
   return i18next.t(key, params) as string;
 }
 export function getAllLocalizedTranslations(

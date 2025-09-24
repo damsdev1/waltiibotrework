@@ -3,12 +3,7 @@ import { giveawayAdd } from "@/discord/modules/giveaway/GiveawayAdd.js";
 import { t } from "@/lib/locales/i18n.js";
 import { prisma } from "@/lib/prisma.js";
 import type { InteractionEditReplyOptions } from "discord.js";
-import {
-  ActionRowBuilder,
-  ButtonBuilder,
-  ButtonStyle,
-  type ButtonInteraction,
-} from "discord.js";
+import { ActionRowBuilder, ButtonBuilder, ButtonStyle, type ButtonInteraction } from "discord.js";
 
 type DiscordPendingUser = {
   userId: string;
@@ -16,14 +11,9 @@ type DiscordPendingUser = {
   interaction: ButtonInteraction;
   expiresAt: Date;
 };
-const DiscordPendingUsersSchedulerMap = new Map<
-  DiscordPendingUser,
-  NodeJS.Timeout
->();
+const DiscordPendingUsersSchedulerMap = new Map<DiscordPendingUser, NodeJS.Timeout>();
 
-export const AuthorizeMessageComponent = (
-  userLang: string | undefined,
-): InteractionEditReplyOptions => {
+export const AuthorizeMessageComponent = (userLang: string | undefined): InteractionEditReplyOptions => {
   const authorizeButton = new ButtonBuilder()
     .setLabel("Authorize")
     .setStyle(ButtonStyle.Link)
@@ -32,9 +22,7 @@ export const AuthorizeMessageComponent = (
         process.env.REDIRECT_DISCORD_URI || "http://localhost:3000/oauth2",
       )}&scope=identify+connections`,
     );
-  const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
-    authorizeButton,
-  );
+  const row = new ActionRowBuilder<ButtonBuilder>().addComponents(authorizeButton);
   return {
     content: t("giveawayOnlyForSubNeedAuthorizeDiscord", { lng: userLang }),
     components: [row],
@@ -48,12 +36,9 @@ const deleteUser = (discordPendingUser: DiscordPendingUser): void => {
   DiscordPendingUsersSchedulerMap.delete(discordPendingUser);
 };
 
-export const addUserToPending = (
-  discordPendingUser: DiscordPendingUser,
-): void => {
+export const addUserToPending = (discordPendingUser: DiscordPendingUser): void => {
   // Clear existing timeout if any
-  const existingInterval =
-    DiscordPendingUsersSchedulerMap.get(discordPendingUser);
+  const existingInterval = DiscordPendingUsersSchedulerMap.get(discordPendingUser);
   if (existingInterval) {
     clearInterval(existingInterval);
   }
@@ -77,12 +62,7 @@ export const validatePendingUser = async (userId: string): Promise<void> => {
       break;
     }
   }
-  if (
-    !user ||
-    !user.giveawayId ||
-    !user.userId ||
-    Date.now() >= user.expiresAt.getTime()
-  ) {
+  if (!user || !user.giveawayId || !user.userId || Date.now() >= user.expiresAt.getTime()) {
     console.error("Invalid pending user:", user);
     return;
   }
@@ -99,12 +79,7 @@ export const validatePendingUser = async (userId: string): Promise<void> => {
       console.error(`Giveaway not found for ID: ${user.giveawayId}`);
       return;
     }
-    const response = await giveawayAdd(
-      giveaway,
-      user.userId,
-      user.interaction,
-      DiscordClient,
-    );
+    const response = await giveawayAdd(giveaway, user.userId, user.interaction, DiscordClient);
     if (response.type === "reply") {
       await user.interaction.editReply({
         content: t(response.messageKey),

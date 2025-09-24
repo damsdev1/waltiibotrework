@@ -13,11 +13,7 @@ const secureRandom = (max: number): number => {
   if (max <= 0) throw new Error("max must be > 0");
   return crypto.randomInt(0, max);
 };
-const weightedPickMultiple = (
-  items: string[],
-  weights: number[],
-  count: number,
-): string[] => {
+const weightedPickMultiple = (items: string[], weights: number[], count: number): string[] => {
   if (items.length !== weights.length) {
     throw new Error("Items and weights must have the same length");
   }
@@ -49,10 +45,7 @@ const weightedPickMultiple = (
 
   return picked;
 };
-const processGiveawayEnd = (
-  giveawayEntries: GiveawayEntry[],
-  count: number = 1,
-): string[] => {
+const processGiveawayEnd = (giveawayEntries: GiveawayEntry[], count: number = 1): string[] => {
   if (giveawayEntries.length === 0) {
     return [];
   }
@@ -91,17 +84,13 @@ export const processWinners = async (
       return "giveawayAlreadyEnded";
     }
     if (!giveawayData || !giveawayData.channelId || !giveawayData.messageId) {
-      console.error(
-        `Giveaway data not found for ID: ${giveawayId} or missing channel/message ID`,
-      );
+      console.error(`Giveaway data not found for ID: ${giveawayId} or missing channel/message ID`);
       return "giveawayNotFound";
     }
     try {
       const channel = await channelManager?.fetch(giveawayData.channelId);
       if (!channel || !channel.isTextBased()) {
-        console.error(
-          `Channel not found or not text-based for ID: ${giveawayData.channelId}`,
-        );
+        console.error(`Channel not found or not text-based for ID: ${giveawayData.channelId}`);
         return "giveawayNotFound";
       }
       const message = await channel.messages.fetch(giveawayData.messageId);
@@ -113,20 +102,10 @@ export const processWinners = async (
       await message.edit({
         content: null,
         components: [],
-        embeds: [
-          createGiveawayEmbedFinished(
-            giveawayData.prize,
-            entries.length,
-            winners,
-            giveawayData.endTime,
-          ),
-        ],
+        embeds: [createGiveawayEmbedFinished(giveawayData.prize, entries.length, winners, giveawayData.endTime)],
       });
     } catch (error) {
-      console.error(
-        `Error fetching channel or message for giveaway ID: ${giveawayId}`,
-        error,
-      );
+      console.error(`Error fetching channel or message for giveaway ID: ${giveawayId}`, error);
       return "giveawayNotFound";
     }
   } catch (error) {
@@ -140,10 +119,7 @@ export const processWinners = async (
 /**
  * Schedule a single giveaway
  */
-export const scheduleGiveaway = (giveaway: {
-  id: number;
-  endTime: Date;
-}): void => {
+export const scheduleGiveaway = (giveaway: { id: number; endTime: Date }): void => {
   // Clear existing timeout if any
   cancelGiveawayScheduler(giveaway.id);
 

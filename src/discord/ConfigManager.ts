@@ -34,10 +34,7 @@ export function getAllConfig(): BotConfig {
 /**
  * Set a config value safely with a write queue
  */
-export async function setConfig<T = unknown>(
-  key: keyof BotConfig,
-  value: T,
-): Promise<void> {
+export async function setConfig<T = unknown>(key: keyof BotConfig, value: T): Promise<void> {
   cache[key] = value;
 
   // Chain the write onto the existing queue

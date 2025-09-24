@@ -40,25 +40,17 @@ export async function sendEmbedToConfiguredChannel(
   try {
     const channel = await guild.channels.fetch(String(channelId));
     if (!channel || !channel.isTextBased()) {
-      console.error(
-        `Configured channel for key "${String(configKey)}" is not a text channel.`,
-      );
+      console.error(`Configured channel for key "${String(configKey)}" is not a text channel.`);
       return;
     }
     await channel.send(payload);
   } catch (error) {
-    console.error(
-      `Error sending message to configured channel (${String(configKey)}):`,
-      error,
-    );
+    console.error(`Error sending message to configured channel (${String(configKey)}):`, error);
   }
 }
 
 export async function replyEphemeral(
-  interaction:
-    | CommandInteraction
-    | MessageComponentInteraction
-    | ModalSubmitInteraction,
+  interaction: CommandInteraction | MessageComponentInteraction | ModalSubmitInteraction,
   messageKey: TranslationKeys,
   lng: string = "fr",
   variables?: Record<string, unknown>,

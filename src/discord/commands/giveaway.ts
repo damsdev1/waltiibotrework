@@ -15,18 +15,10 @@ import { replyEphemeral } from "@/discord/utils.js";
 import { getAllLocalizedTranslations, t } from "@/lib/locales/i18n.js";
 import { prisma } from "@/lib/prisma.js";
 import { wizards } from "@/lib/Store.js";
-import type {
-  GiveawayWizard,
-  GiveawayWizardPage,
-} from "@/lib/types/giveaway.js";
+import type { GiveawayWizard, GiveawayWizardPage } from "@/lib/types/giveaway.js";
 import type { TranslationKeys } from "@/lib/types/i18n.js";
 import { getUserLang } from "@/lib/utils.js";
-import type {
-  AutocompleteInteraction,
-  ChannelManager,
-  ChatInputCommandInteraction,
-  TextChannel,
-} from "discord.js";
+import type { AutocompleteInteraction, ChannelManager, ChatInputCommandInteraction, TextChannel } from "discord.js";
 import {
   ActionRowBuilder,
   ButtonBuilder,
@@ -101,47 +93,35 @@ const getPages = (
 export const data = new SlashCommandBuilder()
   .setName("giveaway")
   .setDescription(t("giveawaySlashCommand"))
-  .setDescriptionLocalizations(
-    getAllLocalizedTranslations("giveawaySlashCommand"),
-  )
+  .setDescriptionLocalizations(getAllLocalizedTranslations("giveawaySlashCommand"))
   .addSubcommandGroup((group) =>
     group
       .setName("create")
       .setDescription(t("giveawaySlashCommandCreate"))
-      .setDescriptionLocalizations(
-        getAllLocalizedTranslations("giveawaySlashCommandCreate"),
-      )
+      .setDescriptionLocalizations(getAllLocalizedTranslations("giveawaySlashCommandCreate"))
       .addSubcommand((subcommand) =>
         subcommand
           .setName("sub")
           .setDescription(t("giveawaySlashCommandCreateSub"))
-          .setDescriptionLocalizations(
-            getAllLocalizedTranslations("giveawaySlashCommandCreateSub"),
-          ),
+          .setDescriptionLocalizations(getAllLocalizedTranslations("giveawaySlashCommandCreateSub")),
       )
       .addSubcommand((subcommand) =>
         subcommand
           .setName("all")
           .setDescription(t("giveawaySlashCommandCreateAll"))
-          .setDescriptionLocalizations(
-            getAllLocalizedTranslations("giveawaySlashCommandCreateAll"),
-          ),
+          .setDescriptionLocalizations(getAllLocalizedTranslations("giveawaySlashCommandCreateAll")),
       ),
   )
   .addSubcommand((subcommand) =>
     subcommand
       .setName("delete")
       .setDescription(t("giveawaySlashCommandDelete"))
-      .setDescriptionLocalizations(
-        getAllLocalizedTranslations("giveawaySlashCommandDelete"),
-      )
+      .setDescriptionLocalizations(getAllLocalizedTranslations("giveawaySlashCommandDelete"))
       .addStringOption((option) =>
         option
           .setName("id")
           .setDescription(t("giveawaySlashCommandDeleteId"))
-          .setDescriptionLocalizations(
-            getAllLocalizedTranslations("giveawaySlashCommandDeleteId"),
-          )
+          .setDescriptionLocalizations(getAllLocalizedTranslations("giveawaySlashCommandDeleteId"))
           .setRequired(true)
           .setAutocomplete(true),
       ),
@@ -150,16 +130,12 @@ export const data = new SlashCommandBuilder()
     subcommand
       .setName("edit")
       .setDescription(t("giveawaySlashCommandEdit"))
-      .setDescriptionLocalizations(
-        getAllLocalizedTranslations("giveawaySlashCommandEdit"),
-      )
+      .setDescriptionLocalizations(getAllLocalizedTranslations("giveawaySlashCommandEdit"))
       .addStringOption((option) =>
         option
           .setName("id")
           .setDescription(t("giveawaySlashCommandEditId"))
-          .setDescriptionLocalizations(
-            getAllLocalizedTranslations("giveawaySlashCommandEditId"),
-          )
+          .setDescriptionLocalizations(getAllLocalizedTranslations("giveawaySlashCommandEditId"))
           .setRequired(true)
           .setAutocomplete(true),
       ),
@@ -169,16 +145,12 @@ export const data = new SlashCommandBuilder()
     subcommand
       .setName("roll")
       .setDescription(t("giveawaySlashCommandRoll"))
-      .setDescriptionLocalizations(
-        getAllLocalizedTranslations("giveawaySlashCommandRoll"),
-      )
+      .setDescriptionLocalizations(getAllLocalizedTranslations("giveawaySlashCommandRoll"))
       .addStringOption((option) =>
         option
           .setName("id")
           .setDescription(t("giveawaySlashCommandRollId"))
-          .setDescriptionLocalizations(
-            getAllLocalizedTranslations("giveawaySlashCommandRollId"),
-          )
+          .setDescriptionLocalizations(getAllLocalizedTranslations("giveawaySlashCommandRollId"))
           .setRequired(true)
           .setAutocomplete(true),
       ),
@@ -187,16 +159,12 @@ export const data = new SlashCommandBuilder()
     subcommand
       .setName("reroll")
       .setDescription(t("giveawaySlashCommandReroll"))
-      .setDescriptionLocalizations(
-        getAllLocalizedTranslations("giveawaySlashCommandReroll"),
-      )
+      .setDescriptionLocalizations(getAllLocalizedTranslations("giveawaySlashCommandReroll"))
       .addStringOption((option) =>
         option
           .setName("id")
           .setDescription(t("giveawaySlashCommandRerollId"))
-          .setDescriptionLocalizations(
-            getAllLocalizedTranslations("giveawaySlashCommandRerollId"),
-          )
+          .setDescriptionLocalizations(getAllLocalizedTranslations("giveawaySlashCommandRerollId"))
           .setRequired(true)
           .setAutocomplete(true),
       ),
@@ -205,16 +173,12 @@ export const data = new SlashCommandBuilder()
     subcommand
       .setName("resend")
       .setDescription(t("giveawaySlashCommandResend"))
-      .setDescriptionLocalizations(
-        getAllLocalizedTranslations("giveawaySlashCommandResend"),
-      )
+      .setDescriptionLocalizations(getAllLocalizedTranslations("giveawaySlashCommandResend"))
       .addStringOption((option) =>
         option
           .setName("id")
           .setDescription(t("giveawaySlashCommandResendId"))
-          .setDescriptionLocalizations(
-            getAllLocalizedTranslations("giveawaySlashCommandResendId"),
-          )
+          .setDescriptionLocalizations(getAllLocalizedTranslations("giveawaySlashCommandResendId"))
           .setRequired(true)
           .setAutocomplete(true),
       ),
@@ -222,10 +186,7 @@ export const data = new SlashCommandBuilder()
   .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
   .setContexts(InteractionContextType.Guild);
 
-async function handleCreate(
-  interaction: ChatInputCommandInteraction,
-  userLang: string,
-): Promise<void> {
+async function handleCreate(interaction: ChatInputCommandInteraction, userLang: string): Promise<void> {
   const subCommand = interaction.options.getSubcommand();
   if (subCommand === "sub" && !isSubscribersRolesConfigured()) {
     return replyEphemeral(interaction, "giveawaySubNotConfigured", userLang);
@@ -255,31 +216,21 @@ async function handleCreate(
   }
 }
 
-const giveawayDeleteMessage = async (
-  giveaway: Giveaway,
-  channelManager: ChannelManager,
-): Promise<void> => {
+const giveawayDeleteMessage = async (giveaway: Giveaway, channelManager: ChannelManager): Promise<void> => {
   if (!giveaway?.channelId) {
     return;
   }
-  const channel = await channelManager
-    .fetch(giveaway.channelId)
-    .catch(() => null);
+  const channel = await channelManager.fetch(giveaway.channelId).catch(() => null);
   if (!channel || !channel.isTextBased()) {
     return;
   }
-  const message = await channel.messages
-    .fetch(giveaway.messageId)
-    .catch(() => null);
+  const message = await channel.messages.fetch(giveaway.messageId).catch(() => null);
   if (message) {
     message.delete().catch(() => null);
   }
 };
 
-async function handleEdit(
-  interaction: ChatInputCommandInteraction,
-  userLang: string,
-): Promise<void> {
+async function handleEdit(interaction: ChatInputCommandInteraction, userLang: string): Promise<void> {
   const giveawayId = interaction.options.getString("id", true);
   const giveaway = await prisma.giveaway.findUnique({
     where: { id: parseInt(giveawayId) },
@@ -303,11 +254,7 @@ async function handleEdit(
   const messageId = reply.resource?.message?.id;
   if (messageId) {
     wizards.set(messageId, {
-      pages: getPages(
-        userLang,
-        getMonthOptions(String(giveaway.endTime.getFullYear())),
-        "giveawayWizardEdit",
-      ),
+      pages: getPages(userLang, getMonthOptions(String(giveaway.endTime.getFullYear())), "giveawayWizardEdit"),
       pageIndex: 0,
       data: {
         prize: giveaway.prize,
@@ -332,10 +279,7 @@ async function handleEdit(
   }
 }
 
-async function handleDelete(
-  interaction: ChatInputCommandInteraction,
-  userLang: string,
-): Promise<void> {
+async function handleDelete(interaction: ChatInputCommandInteraction, userLang: string): Promise<void> {
   const giveawayId = interaction.options.getString("id", true);
   const giveaway = await prisma.giveaway.findUnique({
     where: { id: parseInt(giveawayId) },
@@ -353,10 +297,7 @@ async function handleDelete(
       prize: giveaway.prize,
     });
   } catch (error) {
-    console.error(
-      `Failed to delete giveaway message: ${giveaway.messageId}`,
-      error,
-    );
+    console.error(`Failed to delete giveaway message: ${giveaway.messageId}`, error);
     return replyEphemeral(interaction, "giveawayDeletedDBOnly", userLang);
   }
 }
@@ -368,11 +309,7 @@ async function handleRoll(
 ): Promise<void> {
   const giveawayId = interaction.options.getString("id", true);
   try {
-    const result = await processWinners(
-      parseInt(giveawayId, 10),
-      interaction.client.channels ?? null,
-      reroll,
-    );
+    const result = await processWinners(parseInt(giveawayId, 10), interaction.client.channels ?? null, reroll);
     return replyEphemeral(interaction, result, userLang);
   } catch (error) {
     console.error("Error fetching giveaway:", error);
@@ -380,10 +317,7 @@ async function handleRoll(
   }
 }
 
-async function handleResend(
-  interaction: ChatInputCommandInteraction,
-  userLang: string,
-): Promise<void> {
+async function handleResend(interaction: ChatInputCommandInteraction, userLang: string): Promise<void> {
   const channel = interaction.channel;
   const giveawayId = interaction.options.getString("id", true);
   try {
@@ -394,11 +328,7 @@ async function handleResend(
       return replyEphemeral(interaction, "giveawayNotFound", userLang);
     }
     if (!channel || !channel.isTextBased()) {
-      return replyEphemeral(
-        interaction,
-        "invalidChannelOrPermissions",
-        userLang,
-      );
+      return replyEphemeral(interaction, "invalidChannelOrPermissions", userLang);
     }
     try {
       const entriesNumber = await prisma.giveawayEntry.count({
@@ -411,29 +341,15 @@ async function handleResend(
           where: { giveawayId: giveaway.id },
         });
         const winnerUserIds = winners.map((winner) => winner.userId);
-        embed = createGiveawayEmbedFinished(
-          giveaway.prize,
-          entriesNumber,
-          winnerUserIds,
-          giveaway.endTime,
-        );
+        embed = createGiveawayEmbedFinished(giveaway.prize, entriesNumber, winnerUserIds, giveaway.endTime);
       } else {
-        embed = createGiveawayEmbed(
-          giveaway.prize,
-          entriesNumber,
-          giveaway.endTime,
-          giveaway.winnerCount,
-        );
+        embed = createGiveawayEmbed(giveaway.prize, entriesNumber, giveaway.endTime, giveaway.winnerCount);
         const participateButton = new ButtonBuilder()
           .setCustomId(`giveaway_join_${giveaway.interactionId}`)
           .setLabel(t("giveawayAnnounceJoinButton"))
           .setStyle(ButtonStyle.Primary);
 
-        rows.push(
-          new ActionRowBuilder<ButtonBuilder>().addComponents(
-            participateButton,
-          ),
-        );
+        rows.push(new ActionRowBuilder<ButtonBuilder>().addComponents(participateButton));
       }
 
       const message = await (channel as TextChannel).send({
@@ -456,24 +372,15 @@ async function handleResend(
       }
       return replyEphemeral(interaction, "errorHappen", userLang);
     } catch (error) {
-      console.error(
-        `Failed to resend giveaway message to channel: ${channel.id}`,
-        error,
-      );
-      return replyEphemeral(
-        interaction,
-        "invalidChannelOrPermissions",
-        userLang,
-      );
+      console.error(`Failed to resend giveaway message to channel: ${channel.id}`, error);
+      return replyEphemeral(interaction, "invalidChannelOrPermissions", userLang);
     }
   } catch (error) {
     console.error("Error happened:", error);
     return replyEphemeral(interaction, "errorHappen", userLang);
   }
 }
-export const execute = async (
-  interaction: ChatInputCommandInteraction,
-): Promise<void> => {
+export const execute = async (interaction: ChatInputCommandInteraction): Promise<void> => {
   const userLang = getUserLang(interaction.locale);
   const group = interaction.options.getSubcommandGroup(false);
   const sub = interaction.options.getSubcommand();
@@ -497,9 +404,7 @@ export const execute = async (
   return replyEphemeral(interaction, "unknownSubcommand", userLang);
 };
 
-export const autocomplete = async (
-  interaction: AutocompleteInteraction,
-): Promise<void> => {
+export const autocomplete = async (interaction: AutocompleteInteraction): Promise<void> => {
   const focusedValue = interaction.options.getFocused();
   const choices = await prisma.giveaway.findMany({
     where: {

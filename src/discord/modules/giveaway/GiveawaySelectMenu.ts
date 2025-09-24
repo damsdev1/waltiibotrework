@@ -8,9 +8,7 @@ export const getMonthOptions = (selectedYear: string): string[] => {
   const currentYear = now.getFullYear();
   const currentMonth = now.getMonth() + 1;
   if (Number(selectedYear) === currentYear) {
-    return Array.from({ length: 12 - currentMonth + 1 }, (_, i) =>
-      String(currentMonth + i).padStart(2, "0"),
-    );
+    return Array.from({ length: 12 - currentMonth + 1 }, (_, i) => String(currentMonth + i).padStart(2, "0"));
   }
   return Array.from({ length: 12 }, (_, i) => String(i + 1).padStart(2, "0"));
 };
@@ -24,9 +22,7 @@ const updateMonthOptions = (
   }
 };
 
-export const handleGiveawaySelectMenu = async (
-  interaction: Interaction,
-): Promise<void> => {
+export const handleGiveawaySelectMenu = async (interaction: Interaction): Promise<void> => {
   if (!interaction.isStringSelectMenu()) {
     return;
   }
@@ -39,8 +35,7 @@ export const handleGiveawaySelectMenu = async (
   if (!page.key) {
     return;
   }
-  (wizard.data as Record<string, unknown>)[page.key as string] =
-    interaction.values[0];
+  (wizard.data as Record<string, unknown>)[page.key as string] = interaction.values[0];
   updateMonthOptions(
     { key: page.key, index: wizard.pageIndex },
     wizard as { pages: { options?: string[] }[] },

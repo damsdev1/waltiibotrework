@@ -1,7 +1,4 @@
-import {
-  handleGiveawayJoin,
-  isGiveawayJoin,
-} from "@/discord/modules/giveaway/buttons/handleGiveawayJoin.js";
+import { handleGiveawayJoin, isGiveawayJoin } from "@/discord/modules/giveaway/buttons/handleGiveawayJoin.js";
 import {
   handleWizardNavigationButtons,
   isWizardNavigationButton,
@@ -13,9 +10,7 @@ import {
 import { wizards } from "@/lib/Store.js";
 import type { Interaction } from "discord.js";
 
-export const handleGiveawayButton = async (
-  interaction: Interaction,
-): Promise<void> => {
+export const handleGiveawayButton = async (interaction: Interaction): Promise<void> => {
   if (!interaction.isButton()) {
     return;
   }

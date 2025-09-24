@@ -9,17 +9,9 @@ import type {
   SlashCommandChannelOption,
   SlashCommandSubcommandBuilder,
 } from "discord.js";
-import {
-  ChannelType,
-  MessageFlags,
-  PermissionFlagsBits,
-  SlashCommandBuilder,
-} from "discord.js";
+import { ChannelType, MessageFlags, PermissionFlagsBits, SlashCommandBuilder } from "discord.js";
 
-const configMap: Record<
-  string,
-  { key: string; msgKey: TranslationKeys; descKey: TranslationKeys }
-> = {
+const configMap: Record<string, { key: string; msgKey: TranslationKeys; descKey: TranslationKeys }> = {
   annonce: {
     key: "announceChannel",
     msgKey: "managerChannelsAnnouncementChannelDefined",
@@ -42,10 +34,7 @@ const configMap: Record<
   },
 };
 
-async function validateChannel(
-  channel: Channel,
-  interaction: ChatInputCommandInteraction,
-): Promise<string | null> {
+async function validateChannel(channel: Channel, interaction: ChatInputCommandInteraction): Promise<string | null> {
   const lng = getUserLang(interaction.locale);
   try {
     const fetched = await interaction.guild?.channels.fetch(channel.id);
@@ -55,9 +44,7 @@ async function validateChannel(
     if (!interaction.guild?.members.me) {
       return t("managerChannelsNoGuildInfo", { lng });
     }
-    const canSend = fetched
-      .permissionsFor(interaction.guild.members.me)
-      ?.has(PermissionFlagsBits.SendMessages);
+    const canSend = fetched.permissionsFor(interaction.guild.members.me)?.has(PermissionFlagsBits.SendMessages);
     if (!canSend) {
       return t("managerChannelsNoSendMessagesPermission", { lng });
     }
@@ -102,11 +89,7 @@ export const data = ((): SlashCommandBuilder => {
           option
             .setName("salon")
             .setDescription(t("managerChannelsSlashCommandChannelOption"))
-            .setDescriptionLocalizations(
-              getAllLocalizedTranslations(
-                "managerChannelsSlashCommandChannelOption",
-              ),
-            )
+            .setDescriptionLocalizations(getAllLocalizedTranslations("managerChannelsSlashCommandChannelOption"))
             .addChannelTypes(ChannelType.GuildText)
             .setRequired(true),
         ),
@@ -116,9 +99,7 @@ export const data = ((): SlashCommandBuilder => {
   return builder;
 })();
 
-export async function execute(
-  interaction: ChatInputCommandInteraction,
-): Promise<void> {
+export async function execute(interaction: ChatInputCommandInteraction): Promise<void> {
   const lng = getUserLang(interaction.locale);
 
   if (!interaction.guild) {
@@ -127,11 +108,7 @@ export async function execute(
 
   const channel = interaction.options.getChannel("salon", true);
   if (channel.type !== ChannelType.GuildText) {
-    return replyEphemeral(
-      interaction,
-      "managerChannelsInvalidTextChannel",
-      lng,
-    );
+    return replyEphemeral(interaction, "managerChannelsInvalidTextChannel", lng);
   }
 
   const sub = interaction.options.getSubcommand();

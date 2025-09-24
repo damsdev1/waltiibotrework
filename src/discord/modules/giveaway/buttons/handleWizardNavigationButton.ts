@@ -15,28 +15,12 @@ import { prisma } from "@/lib/prisma.js";
 import { wizards } from "@/lib/Store.js";
 import type { GiveawayWizard } from "@/lib/types/giveaway.js";
 import { getUserLang } from "@/lib/utils.js";
-import {
-  buildWizardDate,
-  GiveawayWizardDataValidator,
-} from "@/lib/validators/giveaway.js";
+import { buildWizardDate, GiveawayWizardDataValidator } from "@/lib/validators/giveaway.js";
 import type { ButtonInteraction } from "discord.js";
-import {
-  ActionRowBuilder,
-  ButtonBuilder,
-  ButtonStyle,
-  ChannelType,
-} from "discord.js";
+import { ActionRowBuilder, ButtonBuilder, ButtonStyle, ChannelType } from "discord.js";
 
-export const isWizardNavigationButton = (
-  interaction: ButtonInteraction,
-  wizard: GiveawayWizard,
-): boolean => {
-  return (
-    !!wizard &&
-    WIZARD_NAV_IDS.includes(
-      interaction.customId as (typeof WIZARD_NAV_IDS)[number],
-    )
-  );
+export const isWizardNavigationButton = (interaction: ButtonInteraction, wizard: GiveawayWizard): boolean => {
+  return !!wizard && WIZARD_NAV_IDS.includes(interaction.customId as (typeof WIZARD_NAV_IDS)[number]);
 };
 
 export const handleWizardNavigationButtons = async (
@@ -50,10 +34,7 @@ export const handleWizardNavigationButtons = async (
       await interaction.update(wizardEmbedContent(userLang, wizard));
       return;
     case "next":
-      wizard.pageIndex = Math.min(
-        wizard.pages.length - 1,
-        wizard.pageIndex + 1,
-      );
+      wizard.pageIndex = Math.min(wizard.pages.length - 1, wizard.pageIndex + 1);
       console.log(wizard);
       await interaction.update(wizardEmbedContent(userLang, wizard));
       return;
@@ -78,12 +59,7 @@ export const handleWizardNavigationButtons = async (
       }
       const { prize, year, month, day, time } = wizard.data;
       // Use shared builder and ensure endTime is in the future
-      const endTime = buildWizardDate(
-        String(year),
-        String(month),
-        String(day),
-        String(time),
-      );
+      const endTime = buildWizardDate(String(year), String(month), String(day), String(time));
       if (!endTime || endTime <= new Date()) {
         await interaction.update({
           content: t("giveawayWizardInvalidDate", { lng: userLang }),
@@ -93,9 +69,7 @@ export const handleWizardNavigationButtons = async (
         return;
       }
 
-      const channel = await interaction.guild?.channels.fetch(
-        interaction.channelId,
-      );
+      const channel = await interaction.guild?.channels.fetch(interaction.channelId);
       if (!channel || channel.type !== ChannelType.GuildText) {
         await interaction.update({
           content: t("invalidChannelOrPermissions", { lng: userLang }),
@@ -147,16 +121,10 @@ export const handleWizardNavigationButtons = async (
               .setLabel(t("giveawayAnnounceJoinButton"))
               .setStyle(ButtonStyle.Primary);
 
-            rows.push(
-              new ActionRowBuilder<ButtonBuilder>().addComponents(
-                participateButton,
-              ),
-            );
+            rows.push(new ActionRowBuilder<ButtonBuilder>().addComponents(participateButton));
           }
           const message = giveawayOrignal?.messageId
-            ? await channel.messages
-                .fetch(giveawayOrignal.messageId)
-                .catch(() => null)
+            ? await channel.messages.fetch(giveawayOrignal.messageId).catch(() => null)
             : null;
           console.log(message);
           if (!message) {
@@ -204,20 +172,11 @@ export const handleWizardNavigationButtons = async (
           .setLabel(t("giveawayAnnounceJoinButton"))
           .setStyle(ButtonStyle.Primary);
 
-        const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
-          participateButton,
-        );
+        const row = new ActionRowBuilder<ButtonBuilder>().addComponents(participateButton);
         console.log(wizard);
         // Send message and create DB entry in parallel
         const message = await channel.send({
-          embeds: [
-            createGiveawayEmbed(
-              prize || "No prize",
-              0,
-              endTime,
-              Number(wizard.data.winnerCount) || 1,
-            ),
-          ],
+          embeds: [createGiveawayEmbed(prize || "No prize", 0, endTime, Number(wizard.data.winnerCount) || 1)],
           components: [row],
         });
 

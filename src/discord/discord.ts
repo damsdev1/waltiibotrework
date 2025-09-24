@@ -18,9 +18,7 @@ client.commands = new Collection();
 async function loadCommands(): Promise<unknown[]> {
   const commands = [];
   const commandsPath = path.join(getDirName(import.meta), "commands");
-  const commandFiles = fs
-    .readdirSync(commandsPath)
-    .filter((file) => file.endsWith(".ts") || file.endsWith(".js"));
+  const commandFiles = fs.readdirSync(commandsPath).filter((file) => file.endsWith(".ts") || file.endsWith(".js"));
 
   for (const file of commandFiles) {
     const filePath = path.join(commandsPath, file);
@@ -29,9 +27,7 @@ async function loadCommands(): Promise<unknown[]> {
       client.commands.set(command.data.name, command);
       commands.push(command.data.toJSON());
     } else {
-      console.warn(
-        `[WARNING] The command at ${filePath} is missing a required "data" or "execute" property.`,
-      );
+      console.warn(`[WARNING] The command at ${filePath} is missing a required "data" or "execute" property.`);
     }
   }
 
@@ -40,23 +36,13 @@ async function loadCommands(): Promise<unknown[]> {
 async function loadRest(commands: unknown[]): Promise<void> {
   const rest = new REST({ version: "10" }).setToken(process.env.TOKEN!);
   try {
-    console.info(
-      `Started refreshing ${commands.length} application (/) commands.`,
-    );
+    console.info(`Started refreshing ${commands.length} application (/) commands.`);
 
-    const data = (await rest.put(
-      Routes.applicationGuildCommands(
-        process.env.CLIENT_ID!,
-        process.env.GUILD_ID!,
-      ),
-      {
-        body: commands,
-      },
-    )) as unknown[];
+    const data = (await rest.put(Routes.applicationGuildCommands(process.env.CLIENT_ID!, process.env.GUILD_ID!), {
+      body: commands,
+    })) as unknown[];
 
-    console.info(
-      `Successfully reloaded ${data.length} application (/) commands.`,
-    );
+    console.info(`Successfully reloaded ${data.length} application (/) commands.`);
   } catch (error) {
     console.error(`Failed to reload application (/) commands: ${error}`);
   }
@@ -67,9 +53,7 @@ async function loadEvents(): Promise<void> {
     console.warn(`[WARN] Events folder does not exist: ${eventsPath}`);
     return;
   }
-  const eventFiles = fs
-    .readdirSync(eventsPath)
-    .filter((file) => file.endsWith(".ts") || file.endsWith(".js"));
+  const eventFiles = fs.readdirSync(eventsPath).filter((file) => file.endsWith(".ts") || file.endsWith(".js"));
 
   for (const file of eventFiles) {
     const filePath = path.join(eventsPath, file);

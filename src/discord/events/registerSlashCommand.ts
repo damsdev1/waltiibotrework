@@ -1,9 +1,4 @@
-import type {
-  Client,
-  Collection,
-  Interaction,
-  SlashCommandBuilder,
-} from "discord.js";
+import type { Client, Collection, Interaction, SlashCommandBuilder } from "discord.js";
 import { Events, MessageFlags } from "discord.js";
 
 export const name = Events.InteractionCreate;
@@ -21,14 +16,10 @@ interface ClientDiscord extends Client {
 
 export const execute = async (interaction: Interaction): Promise<void> => {
   if (interaction.isChatInputCommand()) {
-    const command = (interaction.client as ClientDiscord).commands.get(
-      interaction.commandName,
-    );
+    const command = (interaction.client as ClientDiscord).commands.get(interaction.commandName);
 
     if (!command) {
-      console.error(
-        `No command matching ${interaction.commandName} was found.`,
-      );
+      console.error(`No command matching ${interaction.commandName} was found.`);
       return;
     }
 
@@ -42,14 +33,10 @@ export const execute = async (interaction: Interaction): Promise<void> => {
       });
     }
   } else if (interaction.isAutocomplete()) {
-    const command = (interaction.client as ClientDiscord).commands.get(
-      interaction.commandName,
-    );
+    const command = (interaction.client as ClientDiscord).commands.get(interaction.commandName);
 
     if (!command) {
-      console.error(
-        `No command matching ${interaction.commandName} was found.`,
-      );
+      console.error(`No command matching ${interaction.commandName} was found.`);
       return;
     }
 

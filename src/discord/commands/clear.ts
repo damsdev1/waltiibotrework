@@ -2,11 +2,7 @@ import { replyEphemeral } from "@/discord/utils.js";
 import { getAllLocalizedTranslations, t } from "@/lib/locales/i18n.js";
 import { getUserLang } from "@/lib/utils.js";
 import type { ChatInputCommandInteraction } from "discord.js";
-import {
-  InteractionContextType,
-  PermissionFlagsBits,
-  SlashCommandBuilder,
-} from "discord.js";
+import { InteractionContextType, PermissionFlagsBits, SlashCommandBuilder } from "discord.js";
 
 export const data = new SlashCommandBuilder()
   .setName("clear")
@@ -29,9 +25,7 @@ export const data = new SlashCommandBuilder()
   .setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages)
   .setContexts(InteractionContextType.Guild);
 
-export const execute = async (
-  interaction: ChatInputCommandInteraction,
-): Promise<void> => {
+export const execute = async (interaction: ChatInputCommandInteraction): Promise<void> => {
   const lng = getUserLang(interaction.locale);
   if (!interaction.guild) {
     return replyEphemeral(interaction, "commandOnlyInGuild", lng);
@@ -44,11 +38,7 @@ export const execute = async (
       max: 100,
     });
   }
-  if (
-    interaction.channel &&
-    interaction.channel.isTextBased() &&
-    "bulkDelete" in interaction.channel
-  ) {
+  if (interaction.channel && interaction.channel.isTextBased() && "bulkDelete" in interaction.channel) {
     await interaction.channel.bulkDelete(messagesNumber, true);
     return replyEphemeral(interaction, "clearDeletedMessages", lng, {
       count: messagesNumber,

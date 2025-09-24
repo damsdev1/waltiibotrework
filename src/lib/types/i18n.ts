@@ -11,15 +11,11 @@ type PluralKeys =
       : never
     : never;
 
-type NormalKeys = Exclude<
-  keyof RawTranslations,
-  `${string}_one` | `${string}_other`
->;
+type NormalKeys = Exclude<keyof RawTranslations, `${string}_one` | `${string}_other`>;
 
-type ExtractParams<T extends string> =
-  T extends `${string}{{${infer P}}}${infer Rest}`
-    ? { [K in P | keyof ExtractParams<Rest>]: string | number }
-    : object;
+type ExtractParams<T extends string> = T extends `${string}{{${infer P}}}${infer Rest}`
+  ? { [K in P | keyof ExtractParams<Rest>]: string | number }
+  : object;
 type PluralParams = {
   [K in PluralKeys]: ExtractParams<string>; // fallback to string because keys are not literal
 };

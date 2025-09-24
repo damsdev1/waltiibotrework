@@ -7,16 +7,9 @@ import { prisma } from "@/lib/prisma.js";
 import type { TranslationKeys } from "@/lib/types/i18n.js";
 import type { ButtonInteraction, Client, GuildMember } from "discord.js";
 import { DiscordAPIError } from "discord.js";
-import type {
-  Giveaway,
-  GiveawayEntry,
-} from "../../../../generated/prisma/index.js";
+import type { Giveaway, GiveawayEntry } from "../../../../generated/prisma/index.js";
 
-const addGiveawayEntryDB = async (
-  member: GuildMember,
-  userId: string,
-  giveaway: Giveaway,
-): Promise<GiveawayEntry> => {
+const addGiveawayEntryDB = async (member: GuildMember, userId: string, giveaway: Giveaway): Promise<GiveawayEntry> => {
   const chances = calculateGiveawayChances(member);
   return prisma.giveawayEntry.create({
     data: {
@@ -87,17 +80,10 @@ const giveawayResponse = (
 };
 
 const giveawayNeedsAuthorize = (): GiveawayAddResponse => {
-  return giveawayResponse(
-    false,
-    "giveawayOnlyForSubNeedAuthorizeDiscord",
-    "authorize",
-  );
+  return giveawayResponse(false, "giveawayOnlyForSubNeedAuthorizeDiscord", "authorize");
 };
 
-export const giveawayRemove = async (
-  giveaway: Giveaway,
-  userId: string,
-): Promise<void> => {
+export const giveawayRemove = async (giveaway: Giveaway, userId: string): Promise<void> => {
   await prisma.giveawayEntry.delete({
     where: {
       GiveawayUser: { giveawayId: giveaway.id, userId: userId },
@@ -131,10 +117,7 @@ export const giveawayAdd = async (
     }
     const subscriberRoleId = getConfig<string>("subscriberRoleId");
     if (!member.roles.cache.has(subscriberRoleId!)) {
-      return giveawayResponse(
-        false,
-        "giveawayOnlyForSubNeedDiscordTwitchLinking",
-      );
+      return giveawayResponse(false, "giveawayOnlyForSubNeedDiscordTwitchLinking");
     }
 
     try {
@@ -147,27 +130,14 @@ export const giveawayAdd = async (
         return giveawayNeedsAuthorize();
       }
       try {
-        const memberConnectionsCheckDiscord =
-          await getDiscordConnections(memberOAuth);
+        const memberConnectionsCheckDiscord = await getDiscordConnections(memberOAuth);
         console.log("Member connections:", memberConnectionsCheckDiscord);
         if (memberConnectionsCheckDiscord.length === 0) {
-          return giveawayResponse(
-            false,
-            "giveawayOnlyForSubNeedDiscordTwitchLinking",
-          );
+          return giveawayResponse(false, "giveawayOnlyForSubNeedDiscordTwitchLinking");
         }
-        const giveawayEntry = await addGiveawayEntryDB(
-          member,
-          userId,
-          giveaway,
-        );
+        const giveawayEntry = await addGiveawayEntryDB(member, userId, giveaway);
         await prisma.$transaction(async (tx) => {
-          await handleDiscordConnectionsTx(
-            tx,
-            userId,
-            memberConnectionsCheckDiscord,
-            giveawayEntry,
-          );
+          await handleDiscordConnectionsTx(tx, userId, memberConnectionsCheckDiscord, giveawayEntry);
         });
         await requestGiveawayMessageUpdate(giveaway.id);
         return giveawayResponse(true, "giveawayEnteredSuccessfully");
