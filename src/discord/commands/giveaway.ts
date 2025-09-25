@@ -424,7 +424,7 @@ export const autocomplete = async (interaction: AutocompleteInteraction): Promis
   return interaction.respond(
     choices.map((choice) => ({
       // i want name like this: DD/MM/YYYY HH:MM - Prize
-      name: `${formatDate(choice.endTime)} - ${choice.prize}`,
+      name: `${formatDate(choice.endTime)} - ${choice.prize}`.slice(0, 100),
       value: String(choice.id),
     })),
   );
